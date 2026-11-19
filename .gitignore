@@ -1,0 +1,11 @@
+node_modules/
+out/
+dist/
+release/
+.smoke/
+*.log
+*.tsbuildinfo
+*.pfx
+*.p12
+csc-link.txt
+.DS_Store

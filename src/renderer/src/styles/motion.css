@@ -1,0 +1,820 @@
+/* ------------------------------------------------------------------ motion */
+/* Shared motion tokens. The existing Motion toggle shortens these to a
+   near-instant duration while keeping functional spinners alive. */
+.app {
+  --motion-fast: 150ms;
+  --motion-base: 260ms;
+  --motion-slow: 460ms;
+  --motion-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-snap: cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.app[data-motion='false'] {
+  --motion-fast: 1ms;
+  --motion-base: 1ms;
+  --motion-slow: 1ms;
+}
+
+/* ------------------------------------------------------------- page entry */
+@keyframes route-enter {
+  from {
+    opacity: 0;
+    transform: translateY(11px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes rise-soft {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes card-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.988);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.page {
+  animation: route-enter var(--motion-slow) var(--motion-spring) both;
+}
+
+.page-header > *,
+.home-head > *,
+.section-head > *,
+.library-summary > * {
+  animation: rise-soft var(--motion-slow) var(--motion-spring) both;
+}
+
+.skin-stage-card {
+  animation: rise-soft var(--motion-slow) var(--motion-spring) both;
+}
+.page-header > :nth-child(2),
+.home-head > :nth-child(2),
+.section-head > :nth-child(2),
+.library-summary > :nth-child(2) {
+  animation-delay: 45ms;
+}
+.page-header > :nth-child(3),
+.section-head > :nth-child(3),
+.library-summary > :nth-child(3) {
+  animation-delay: 90ms;
+}
+
+:is(
+    .instance-grid,
+    .project-grid,
+    .download-list,
+    .theme-grid,
+    .health-checks,
+    .template-grid,
+    .stat-grid,
+    .hero-side,
+    .settings-stack,
+    .world-grid,
+    .mod-list,
+    .server-list
+  )
+  > * {
+  animation: card-rise var(--motion-slow) var(--motion-spring) both;
+}
+:is(
+    .instance-grid,
+    .project-grid,
+    .download-list,
+    .theme-grid,
+    .health-checks,
+    .template-grid,
+    .stat-grid,
+    .hero-side,
+    .settings-stack,
+    .world-grid,
+    .mod-list,
+    .server-list
+  )
+  > :nth-child(2) {
+  animation-delay: 45ms;
+}
+:is(
+    .instance-grid,
+    .project-grid,
+    .download-list,
+    .theme-grid,
+    .health-checks,
+    .template-grid,
+    .stat-grid,
+    .hero-side,
+    .settings-stack,
+    .world-grid,
+    .mod-list,
+    .server-list
+  )
+  > :nth-child(3) {
+  animation-delay: 90ms;
+}
+:is(
+    .instance-grid,
+    .project-grid,
+    .download-list,
+    .theme-grid,
+    .health-checks,
+    .template-grid,
+    .stat-grid,
+    .hero-side,
+    .settings-stack,
+    .world-grid,
+    .mod-list,
+    .server-list
+  )
+  > :nth-child(4) {
+  animation-delay: 135ms;
+}
+:is(
+    .instance-grid,
+    .project-grid,
+    .download-list,
+    .theme-grid,
+    .health-checks,
+    .template-grid,
+    .stat-grid,
+    .hero-side,
+    .settings-stack,
+    .world-grid,
+    .mod-list,
+    .server-list
+  )
+  > :nth-child(5) {
+  animation-delay: 180ms;
+}
+:is(
+    .instance-grid,
+    .project-grid,
+    .download-list,
+    .theme-grid,
+    .health-checks,
+    .template-grid,
+    .stat-grid,
+    .hero-side,
+    .settings-stack,
+    .world-grid,
+    .mod-list,
+    .server-list
+  )
+  > :nth-child(6) {
+  animation-delay: 225ms;
+}
+:is(
+    .instance-grid,
+    .project-grid,
+    .download-list,
+    .theme-grid,
+    .health-checks,
+    .template-grid,
+    .stat-grid,
+    .hero-side,
+    .settings-stack,
+    .world-grid,
+    .mod-list,
+    .server-list
+  )
+  > :nth-child(n + 7) {
+  animation-delay: 270ms;
+}
+
+.library-group {
+  animation: card-rise var(--motion-slow) var(--motion-spring) both;
+}
+
+.detail-grid,
+.tab-panel,
+.health-layout,
+.settings-form {
+  animation: rise-soft var(--motion-base) var(--motion-spring) both;
+}
+
+.empty-icon,
+.mini-empty-state > svg {
+  animation: empty-float 5.5s ease-in-out infinite;
+}
+
+@keyframes empty-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(-2deg);
+  }
+}
+
+.instance-card:hover .instance-play:hover {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* ------------------------------------------------------------ interaction */
+.btn,
+.icon-btn,
+.play-btn,
+.instance-card,
+.project-card,
+.world-card,
+.instance-new,
+.theme-card,
+.template-card,
+.library-tag-filter,
+.filter-chip,
+.quick-play-chip,
+.settings-tab,
+.settings-tab svg,
+.nav-item svg,
+.instance-icon,
+.instance-play,
+.tab,
+.tab::after,
+.modal-close svg {
+  transition-timing-function: var(--motion-spring);
+}
+
+.btn {
+  transition-duration: var(--motion-fast);
+}
+
+.btn:active {
+  transform: translateY(0) scale(0.972);
+  transition-duration: 80ms;
+}
+
+.play-btn {
+  transition-duration: var(--motion-base);
+}
+
+.play-btn:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.play-btn::after {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    110deg,
+    transparent 20%,
+    rgb(255 255 255 / 0.28) 46%,
+    transparent 72%
+  );
+  transform: translateX(-130%);
+  opacity: 0;
+}
+
+.play-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.play-btn:hover::after {
+  animation: button-sheen 0.7s var(--motion-snap);
+}
+
+@keyframes button-sheen {
+  0% {
+    transform: translateX(-130%);
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(130%);
+    opacity: 0;
+  }
+}
+
+.icon-btn svg {
+  transition: transform var(--motion-base) var(--motion-spring);
+}
+
+.icon-btn:hover svg {
+  transform: scale(1.09);
+}
+
+.icon-btn:active svg {
+  transform: scale(0.94);
+}
+
+.instance-card {
+  transition-duration: var(--motion-base);
+}
+
+.instance-card:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--glass-border));
+  box-shadow:
+    0 30px 64px -30px rgb(0 0 0 / 0.9),
+    inset 0 1px 0 var(--glass-highlight);
+}
+
+.instance-card:active {
+  transform: translateY(0);
+  transition-duration: 90ms;
+}
+
+.instance-icon {
+  transition: transform var(--motion-base) var(--motion-spring);
+}
+
+.instance-card:hover .instance-icon {
+  transform: scale(1.065) rotate(-2deg);
+}
+
+.instance-play {
+  transition-duration: var(--motion-base);
+}
+
+.instance-card:hover .instance-play {
+  transform: scale(1.08);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.instance-card:hover .instance-tag {
+  border-color: color-mix(in srgb, var(--tag-color, var(--accent)) 44%, transparent);
+}
+
+.project-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--glass-border));
+  box-shadow:
+    0 26px 54px -34px rgb(0 0 0 / 0.8),
+    inset 0 1px 0 var(--glass-highlight);
+}
+
+.project-card:hover .project-icon {
+  transform: scale(1.045) rotate(1deg);
+}
+
+.project-icon {
+  transition: transform var(--motion-base) var(--motion-spring);
+}
+
+.world-card,
+.quick-play-chip,
+.template-card {
+  transition-duration: var(--motion-fast);
+}
+
+.world-card:hover,
+.quick-play-chip:hover {
+  transform: translateY(-1px);
+}
+
+.template-card:hover {
+  transform: translateY(-2px);
+}
+
+.theme-card {
+  transition-duration: var(--motion-base);
+}
+
+.theme-card:hover {
+  transform: translateY(-2px);
+}
+
+.theme-card:hover .theme-swatch {
+  transform: scale(1.018);
+}
+
+.theme-swatch {
+  transition: transform var(--motion-base) var(--motion-spring);
+}
+
+.theme-card.active .theme-swatch-glass {
+  animation: theme-glass-pulse var(--motion-slow) var(--motion-spring);
+}
+
+@keyframes theme-glass-pulse {
+  0% {
+    transform: scale(0.94);
+    opacity: 0.5;
+  }
+  55% {
+    transform: scale(1.025);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.settings-tab:active,
+.library-tag-filter:active,
+.filter-chip:active {
+  transform: scale(0.96);
+}
+
+.settings-tab.active {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.12),
+    0 0 20px -12px var(--accent);
+}
+
+.nav-item svg {
+  transition: transform var(--motion-base) var(--motion-spring);
+}
+
+.nav-item:hover svg {
+  transform: translateX(1px) scale(1.045);
+}
+
+.nav-item.active::before {
+  animation: nav-beam var(--motion-base) var(--motion-spring);
+}
+
+@keyframes nav-beam {
+  from {
+    opacity: 0;
+    transform: translateY(-50%) scaleY(0.25);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-50%) scaleY(1);
+  }
+}
+
+.mini-icon {
+  transition: transform var(--motion-fast) var(--motion-spring);
+}
+
+.mini-instance:hover .mini-icon {
+  transform: scale(1.07);
+}
+
+.modal-close svg {
+  transition: transform var(--motion-base) var(--motion-spring);
+}
+
+.modal-close:hover svg {
+  transform: rotate(90deg) scale(0.94);
+}
+
+.tab {
+  transition: color var(--motion-fast) ease;
+}
+
+.tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 55%, transparent);
+  transform: scaleX(0);
+  transform-origin: center;
+  opacity: 0;
+  transition:
+    transform var(--motion-base) var(--motion-spring),
+    opacity var(--motion-fast) ease;
+}
+
+.tab.active::after {
+  transform: scaleX(1);
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------- ambient */
+@keyframes orb-drift-a {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(4vw, 3vh, 0) scale(1.06);
+  }
+}
+
+@keyframes orb-drift-b {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1.04);
+  }
+  100% {
+    transform: translate3d(-3vw, 4vh, 0) scale(0.97);
+  }
+}
+
+@keyframes orb-drift-c {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  100% {
+    transform: translate3d(-4vw, -3vh, 0) scale(1.08);
+  }
+}
+
+.orb-a {
+  animation: orb-drift-a 26s ease-in-out infinite alternate;
+}
+.orb-b {
+  animation: orb-drift-b 32s ease-in-out infinite alternate;
+}
+.orb-c {
+  animation: orb-drift-c 30s ease-in-out infinite alternate;
+}
+
+.hero-glow {
+  animation: hero-glow-breathe 9s ease-in-out infinite;
+}
+
+@keyframes hero-glow-breathe {
+  0%,
+  100% {
+    opacity: 0.15;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.24;
+    transform: scale(1.08);
+  }
+}
+
+.hero-watermark {
+  animation: watermark-drift 15s ease-in-out infinite alternate;
+}
+
+@keyframes watermark-drift {
+  from {
+    transform: rotate(-6deg) translateY(0) scale(1);
+  }
+  to {
+    transform: rotate(-4deg) translateY(-8px) scale(1.02);
+  }
+}
+
+.hero-empty .hero-logo {
+  animation: logo-float 6s ease-in-out infinite;
+}
+
+@keyframes logo-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(-1deg);
+  }
+}
+
+.bar-fill {
+  transform-origin: bottom;
+  animation: bar-grow 0.75s var(--motion-spring) both;
+}
+
+@keyframes bar-grow {
+  from {
+    transform: scaleY(0.08);
+    opacity: 0.4;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 0.9;
+  }
+}
+
+.progress > span {
+  position: relative;
+  overflow: hidden;
+}
+
+.progress > span::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.4),
+    transparent
+  );
+  transform: translateX(-100%);
+  animation: progress-sheen 2.2s ease-in-out infinite;
+}
+
+@keyframes progress-sheen {
+  0%,
+  35% {
+    transform: translateX(-100%);
+  }
+  75%,
+  100% {
+    transform: translateX(110%);
+  }
+}
+
+.skeleton-card,
+.skeleton-line {
+  position: relative;
+  overflow: hidden;
+}
+
+.skeleton-line {
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(
+    100deg,
+    rgb(255 255 255 / 0.035) 20%,
+    rgb(255 255 255 / 0.085) 40%,
+    rgb(255 255 255 / 0.035) 60%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite linear;
+}
+
+.page-loading {
+  padding-top: 30px;
+}
+
+.page-loading-head {
+  width: min(420px, 70%);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.page-loading-head .skeleton-line:first-child {
+  width: 92px;
+  height: 8px;
+}
+
+.page-loading-head .skeleton-line:nth-child(2) {
+  width: 260px;
+  height: 28px;
+}
+
+.page-loading-head .skeleton-line:nth-child(3) {
+  width: 380px;
+}
+
+.page-loading-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 13px;
+}
+
+.page-loading-grid .skeleton-card {
+  min-height: 174px;
+  border-radius: var(--radius);
+}
+
+/* --------------------------------------------------------------- smoothing */
+.content {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 48%, transparent);
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:where(button, a, input, select, textarea):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 78%, transparent);
+  outline-offset: 2px;
+}
+
+/* Keep decorative motion out of the way when it is disabled in Settings. */
+.app[data-motion='false'] .page,
+.app[data-motion='false'] .page-header > *,
+.app[data-motion='false'] .home-head > *,
+.app[data-motion='false'] .section-head > *,
+.app[data-motion='false'] .library-summary > *,
+.app[data-motion='false'] :is(
+    .instance-grid,
+    .project-grid,
+    .download-list,
+    .theme-grid,
+    .health-checks,
+    .template-grid,
+    .stat-grid,
+    .hero-side,
+    .settings-stack,
+    .world-grid,
+    .mod-list,
+    .server-list
+  )
+  > *,
+.app[data-motion='false'] .skin-stage-card,
+.app[data-motion='false'] .library-group,
+.app[data-motion='false'] .orb,
+.app[data-motion='false'] .hero-glow,
+.app[data-motion='false'] .hero-watermark,
+.app[data-motion='false'] .hero-empty .hero-logo,
+.app[data-motion='false'] .bar-fill,
+.app[data-motion='false'] .theme-card.active .theme-swatch-glass,
+.app[data-motion='false'] .empty-icon,
+.app[data-motion='false'] .mini-empty-state > svg,
+.app[data-motion='false'] .detail-grid,
+.app[data-motion='false'] .tab-panel,
+.app[data-motion='false'] .health-layout,
+.app[data-motion='false'] .settings-form {
+  animation: none !important;
+}
+
+.app[data-motion='false'] .progress > span::after,
+.app[data-motion='false'] .play-btn:hover::after {
+  animation: none !important;
+}
+
+/* Decorative loops stop when the launcher is covered or minimized. Task
+   progress, hover feedback and functional spinners keep working normally. */
+.app[data-window-active='false'] :is(
+    .orb,
+    .hero-glow,
+    .hero-watermark,
+    .hero-empty .hero-logo,
+    .empty-icon,
+    .mini-empty-state > svg,
+    .live-dot,
+    .skeleton-line,
+    .skeleton-card,
+    .performance-skeleton,
+    .splash-logo,
+    .splash-mark,
+    .launch-orb,
+    .launch-pulse,
+    .auto-status-dot.active
+  ) {
+  animation-play-state: paused !important;
+}
+
+.app[data-window-active='false'] .progress > span::after {
+  animation-play-state: paused !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Keep the interface responsive but remove endless decorative loops. */
+  .orb,
+  .hero-glow,
+  .hero-watermark,
+  .hero-empty .hero-logo,
+  .empty-icon,
+  .mini-empty-state > svg,
+  .progress > span::after,
+  .theme-card.active .theme-swatch-glass {
+    animation: none !important;
+  }
+
+  .page,
+  .page-header > *,
+  .home-head > *,
+  .section-head > *,
+  .library-summary > *,
+  .instance-grid > *,
+  .project-grid > *,
+  .download-list > *,
+  .theme-grid > *,
+  .health-checks > *,
+  .template-grid > *,
+  .stat-grid > *,
+  .hero-side > *,
+  .settings-stack > *,
+  .world-grid > *,
+  .mod-list > *,
+  .server-list > *,
+  .skin-stage-card,
+  .library-group,
+  .detail-grid,
+  .tab-panel,
+  .health-layout,
+  .settings-form {
+    animation-duration: 240ms !important;
+  }
+
+  .bar-fill {
+    animation-duration: 420ms !important;
+  }
+}

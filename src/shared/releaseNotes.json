@@ -1,0 +1,41 @@
+{
+  "releases": [
+    {
+      "version": "1.0.1",
+      "title": "A brighter Triad, ready to update itself",
+      "date": "2026-11-14",
+      "sections": [
+        {
+          "title": "Automatic launcher updates",
+          "items": [
+            "Triad now checks for a new build when it starts and downloads it in the background.",
+            "When the update is ready, restart Triad from the prompt or let it install when you close the launcher.",
+            "Accounts, instances, mods, worlds and settings stay in place."
+          ]
+        },
+        {
+          "title": "Every theme, everywhere",
+          "items": [
+            "The selected theme now colours the background, sidebar, titlebar, glass panels and controls.",
+            "The Launcher colour picker recolours the whole shell, not just the buttons.",
+            "Frost keeps its primary buttons readable in the light theme."
+          ]
+        },
+        {
+          "title": "More skins",
+          "items": [
+            "Added the solid Full Black and Full White skins.",
+            "Browse 628 skins with search, categories and your own PNG uploads."
+          ]
+        },
+        {
+          "title": "One-time patch notes",
+          "items": [
+            "This screen appears after an update so you can see what changed.",
+            "It stays out of the way on later launches."
+          ]
+        }
+      ]
+    }
+  ]
+}

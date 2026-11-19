@@ -1,0 +1,109 @@
+{
+  "name": "triad",
+  "productName": "Triad",
+  "version": "1.0.1",
+  "description": "A liquid-glass Minecraft launcher with mod browsing, Microsoft sign-in and multiplayer",
+  "author": "Triad",
+  "main": "./out/main/index.js",
+  "license": "MIT",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "start": "electron-vite preview",
+    "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "icons": "electron scripts/make-icons.cjs",
+    "dist": "npm run build && npm run icons && electron-builder --win nsis",
+    "dist:dir": "npm run build && npm run icons && electron-builder --win --dir",
+    "release:feed": "node scripts/configure-update-feed.cjs",
+    "release:manifest": "node scripts/make-update-manifest.cjs",
+    "release:publish": "node scripts/publish-update.cjs",
+    "release": "npm run release:feed && npm run typecheck && npm run dist && npm run release:manifest"
+  },
+  "build": {
+    "appId": "com.triad.launcher",
+    "productName": "Triad",
+    "copyright": "Copyright © 2026 Triad",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "resources/icon.png",
+        "to": "icon.png"
+      },
+      {
+        "from": "resources/update-feed.json",
+        "to": "update-feed.json"
+      },
+      {
+        "from": "resources/app-update.yml",
+        "to": "app-update.yml"
+      }
+    ],
+    "asar": true,
+    "win": {
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": true,
+      "signExecutable": true,
+      "signtoolOptions": {
+        "signingHashAlgorithms": [
+          "sha256"
+        ],
+        "rfc3161TimeStampServer": "http://timestamp.digicert.com"
+      },
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Triad",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico",
+      "artifactName": "Triad-Setup-${version}.${ext}",
+      "deleteAppDataOnUninstall": false
+    }
+  },
+  "dependencies": {
+    "@xhayper/discord-rpc": "^1.5.1",
+    "@xmcl/core": "2.16.3",
+    "electron-updater": "^6.8.11",
+    "fflate": "0.8.2",
+    "lucide-react": "0.556.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "react-markdown": "10.1.0",
+    "remark-gfm": "4.0.1",
+    "zustand": "5.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "5.1.1",
+    "electron": "45.3.2",
+    "electron-builder": "^26.18.0",
+    "electron-vite": "6.0.0",
+    "typescript": "5.9.3",
+    "vite": "7.3.8"
+  },
+  "overrides": {
+    "@xmcl/unzip": "2.1.2"
+  }
+}
