@@ -58,9 +58,13 @@ const api: Api = {
     load: () => ipcRenderer.invoke('skins:load'),
     save: (kind, dataUrl) => ipcRenderer.invoke('skins:save', kind, dataUrl),
     clear: (kind) => ipcRenderer.invoke('skins:clear', kind),
-    apply: (dataUrl, variant) => ipcRenderer.invoke('skins:apply', dataUrl, variant),
+    apply: (dataUrl, variant, meta) => ipcRenderer.invoke('skins:apply', dataUrl, variant, meta),
     catalog: (request) => ipcRenderer.invoke('skins:catalog', request),
-    texture: (request) => ipcRenderer.invoke('skins:texture', request)
+    texture: (request) => ipcRenderer.invoke('skins:texture', request),
+    selection: () => ipcRenderer.invoke('skins:selection'),
+    favorites: () => ipcRenderer.invoke('skins:favorites'),
+    setFavorite: (entry, favorite) =>
+      ipcRenderer.invoke('skins:setFavorite', entry, favorite)
   },
   auto: {
     status: () => ipcRenderer.invoke('auto:status'),

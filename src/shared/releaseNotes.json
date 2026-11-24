@@ -1,6 +1,30 @@
 {
   "releases": [
     {
+      "version": "1.0.8",
+      "title": "Skins that stay, and favorites",
+      "date": "2026-11-24",
+      "sections": [
+        {
+          "title": "Skins",
+          "items": [
+            "Your applied skin now stays selected after you leave the Skin Changer or close the launcher. The page shows the exact skin you are wearing instead of jumping back to the first catalogue skin.",
+            "A Currently wearing panel shows the saved texture and arm model, and Triad keeps it until you apply a different skin.",
+            "Applied skins are copied into the launcher's local skin assets too, so previews in Settings and Skin Studio match your Minecraft profile.",
+            "Favorite any skin with its heart button. The new Favorites tab in the Skin Changer keeps them together, supports search and survives restarts."
+          ]
+        },
+        {
+          "title": "Notes",
+          "items": [
+            "Favorites and the worn-skin record are stored on this PC in your Triad profile.",
+            "Applying a skin still changes your Microsoft Minecraft profile, so other players see it too.",
+            "The worn-skin record starts with the first skin you apply in 1.0.8; skins applied in older builds are not remembered by the launcher."
+          ]
+        }
+      ]
+    },
+    {
       "version": "1.0.7",
       "title": "The Skindex skin library",
       "date": "2026-11-24",

@@ -238,6 +238,19 @@ export interface SkinCatalogTexture {
   pageUrl: string
 }
 
+export interface SkinSelectionMeta {
+  id: string
+  name: string
+  author?: string
+  pageUrl?: string
+}
+
+export interface SkinSelection extends SkinSelectionMeta {
+  variant: SkinVariant
+  dataUrl: string
+  appliedAt: number
+}
+
 export interface AutoDownloadStatus {
   running: boolean
   lastRun?: number
@@ -567,9 +580,16 @@ export interface Api {
     load: () => Promise<SkinAssets>
     save: (kind: 'skin' | 'cape', dataUrl: string) => Promise<SkinAssets>
     clear: (kind: 'skin' | 'cape') => Promise<SkinAssets>
-    apply: (dataUrl: string, variant: SkinVariant) => Promise<SkinApplyResult>
+    apply: (
+      dataUrl: string,
+      variant: SkinVariant,
+      meta?: SkinSelectionMeta
+    ) => Promise<SkinApplyResult>
     catalog: (request: SkinCatalogRequest) => Promise<SkinCatalogPage>
     texture: (request: { id: string; pageUrl: string }) => Promise<SkinCatalogTexture>
+    selection: () => Promise<SkinSelection | null>
+    favorites: () => Promise<SkinCatalogEntry[]>
+    setFavorite: (entry: SkinCatalogEntry, favorite: boolean) => Promise<SkinCatalogEntry[]>
   }
   auto: {
     status: () => Promise<AutoDownloadStatus>

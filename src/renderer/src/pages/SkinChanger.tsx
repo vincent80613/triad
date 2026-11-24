@@ -15,10 +15,11 @@ import {
   UserRound
 } from 'lucide-react'
 import type {
-  SkinApplyResult,
   SkinCatalogEntry,
   SkinCatalogSort,
   SkinCatalogTexture,
+  SkinSelection,
+  SkinSelectionMeta,
   SkinVariant
 } from '@shared/types'
 import { api, errorMessage } from '../api'
@@ -97,20 +98,92 @@ export function SkinChanger() {
 
   const [busy, setBusy] = useState(false)
   const [applyError, setApplyError] = useState('')
-  const [applied, setApplied] = useState<{ key: string; result: SkinApplyResult } | null>(null)
+
+  const [selection, setSelection] = useState<SkinSelection | null>(null)
+  const [libraryLoaded, setLibraryLoaded] = useState(false)
+  const [favorites, setFavorites] = useState<SkinCatalogEntry[]>([])
+  const [favoritesOnly, setFavoritesOnly] = useState(false)
+  const [favoriteBusy, setFavoriteBusy] = useState('')
 
   const signedIn = account?.type === 'microsoft'
   const selectedEntry = useMemo(
-    () => entries.find((entry) => entry.id === selectedId) ?? null,
-    [entries, selectedId]
+    () =>
+      entries.find((entry) => entry.id === selectedId) ??
+      favorites.find((entry) => entry.id === selectedId) ??
+      null,
+    [entries, favorites, selectedId]
   )
   const textureKey = selectedEntry?.id ?? ''
-  const stageTexture = customActive ? (custom?.dataUrl ?? '') : (texture?.dataUrl ?? '')
-  const stageVariant: SkinVariant = customActive ? customVariant : (texture?.variant ?? 'classic')
-  const stageName = customActive ? (custom?.name ?? 'Custom skin') : (selectedEntry?.name ?? '')
-  const stageKey = customActive ? 'custom-upload' : (selectedEntry?.id ?? '')
-  const selectedApplied = applied?.key === stageKey ? applied.result : null
+  const stageTexture = customActive
+    ? (custom?.dataUrl ?? '')
+    : selectedEntry
+      ? (texture?.dataUrl ??
+        (selection?.id === selectedEntry.id ? selection.dataUrl : ''))
+      : (selection?.dataUrl ?? '')
+  const stageVariant: SkinVariant = customActive
+    ? customVariant
+    : selectedEntry
+      ? (texture?.variant ??
+        (selection?.id === selectedEntry.id ? selection.variant : 'classic'))
+      : (selection?.variant ?? 'classic')
+  const stageName = customActive
+    ? (custom?.name ?? 'Custom skin')
+    : (selectedEntry?.name ?? selection?.name ?? '')
+  const stageIsWorn =
+    !!selection &&
+    (customActive
+      ? selection.id === 'custom-upload' && selection.dataUrl === (custom?.dataUrl ?? '')
+      : selectedEntry
+        ? selection.id === selectedEntry.id
+        : true)
+  const stageMeta: SkinSelectionMeta | null = customActive
+    ? custom
+      ? { id: 'custom-upload', name: custom.name }
+      : null
+    : selectedEntry
+      ? {
+          id: selectedEntry.id,
+          name: selectedEntry.name,
+          author: selectedEntry.author,
+          pageUrl: selectedEntry.pageUrl
+        }
+      : selection
+        ? {
+            id: selection.id,
+            name: selection.name,
+            author: selection.author,
+            pageUrl: selection.pageUrl
+          }
+        : null
   const activeSort = SORTS.find((item) => item.value === sort)?.label ?? 'Top'
+
+  const favoriteMatches = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    if (!term) return favorites
+    return favorites.filter(
+      (entry) =>
+        entry.name.toLowerCase().includes(term) || entry.author.toLowerCase().includes(term)
+    )
+  }, [favorites, search])
+  const visibleEntries = favoritesOnly ? favoriteMatches : entries
+  const isFavorite = (id: string): boolean => favorites.some((entry) => entry.id === id)
+
+  useEffect(() => {
+    let cancelled = false
+    void Promise.all([api.skins.selection(), api.skins.favorites()])
+      .then(([storedSelection, storedFavorites]) => {
+        if (cancelled) return
+        setSelection(storedSelection)
+        setFavorites(storedFavorites)
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setLibraryLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -127,14 +200,14 @@ export function SkinChanger() {
     setEntries([])
     setPage(1)
     setHasMore(false)
+    setSelectedId('')
+    setCustomActive(false)
     void api.skins
       .catalog({ sort, page: 1, query })
       .then((result) => {
         if (cancelled) return
         setEntries(result.entries)
         setHasMore(result.hasMore)
-        setSelectedId(result.entries[0]?.id ?? '')
-        setCustomActive(false)
       })
       .catch((error) => {
         if (!cancelled) setCatalogueError(errorMessage(error))
@@ -146,6 +219,14 @@ export function SkinChanger() {
       cancelled = true
     }
   }, [sort, query, reload])
+
+  // Only auto-preview the first catalogue skin when nothing is worn yet. A
+  // stored selection always wins, so leaving the page never changes the skin.
+  useEffect(() => {
+    if (!libraryLoaded || loading || selection || customActive || selectedId) return
+    const first = entries[0]
+    if (first) setSelectedId(first.id)
+  }, [libraryLoaded, loading, selection, customActive, selectedId, entries])
 
   useEffect(() => {
     if (!selectedEntry || customActive) {
@@ -220,7 +301,6 @@ export function SkinChanger() {
       }
       setCustom(next)
       setCustomActive(true)
-      setApplied(null)
       setApplyError('')
       pushToast({
         title: 'Skin loaded',
@@ -237,13 +317,17 @@ export function SkinChanger() {
       openAccount(true)
       return
     }
-    if (!stageTexture) return
+    if (!stageTexture || !stageMeta) return
     setBusy(true)
     setApplyError('')
-    setApplied(null)
     try {
-      const result = await api.skins.apply(stageTexture, stageVariant)
-      setApplied({ key: stageKey, result })
+      const result = await api.skins.apply(stageTexture, stageVariant, stageMeta)
+      setSelection({
+        ...stageMeta,
+        variant: stageVariant,
+        dataUrl: stageTexture,
+        appliedAt: result.appliedAt
+      })
     } catch (error) {
       setApplyError(errorMessage(error))
     } finally {
@@ -251,15 +335,32 @@ export function SkinChanger() {
     }
   }
 
+  async function toggleFavorite(entry: SkinCatalogEntry): Promise<void> {
+    if (favoriteBusy) return
+    const favorite = !isFavorite(entry.id)
+    setFavoriteBusy(entry.id)
+    try {
+      setFavorites(await api.skins.setFavorite(entry, favorite))
+    } catch (error) {
+      pushToast({
+        title: favorite ? 'Could not save favorite' : 'Could not remove favorite',
+        description: errorMessage(error),
+        variant: 'error'
+      })
+    } finally {
+      setFavoriteBusy('')
+    }
+  }
+
   function chooseEntry(entry: SkinCatalogEntry): void {
     setSelectedId(entry.id)
     setCustomActive(false)
-    setApplied(null)
     setApplyError('')
     setTextureError('')
   }
 
   function chooseSort(next: SkinCatalogSort): void {
+    setFavoritesOnly(false)
     setSort(next)
     if (search.trim()) {
       setSearch('')
@@ -308,14 +409,25 @@ export function SkinChanger() {
               />
             </div>
             <span className="skin-result-count">
-              {loading ? 'Loading…' : `${entries.length}${hasMore ? '+' : ''} loaded`}
+              {favoritesOnly
+                ? `${favoriteMatches.length} saved`
+                : loading
+                  ? 'Loading…'
+                  : `${entries.length}${hasMore ? '+' : ''} loaded`}
             </span>
           </div>
 
           <div className="skin-source-bar">
-            <span className="skin-source-pill">minecraftskins.com</span>
+            <span className="skin-source-pill">
+              {favoritesOnly ? 'Favorites' : 'minecraftskins.com'}
+            </span>
             <span className="skin-source-meta">
-              {query ? `Search “${query}”` : `${activeSort} skins`} · page {page}
+              {favoritesOnly
+                ? 'Saved in Triad'
+                : query
+                  ? `Search “${query}”`
+                  : `${activeSort} skins`}{' '}
+              {!favoritesOnly && <>· page {page}</>}
             </span>
             <button
               type="button"
@@ -331,12 +443,22 @@ export function SkinChanger() {
               <button
                 key={option.value}
                 type="button"
-                className={cn('skin-filter', sort === option.value && 'active')}
+                className={cn('skin-filter', !favoritesOnly && sort === option.value && 'active')}
                 onClick={() => chooseSort(option.value)}
               >
                 {option.label}
               </button>
             ))}
+            <button
+              type="button"
+              className={cn('skin-filter skin-filter-favorites', favoritesOnly && 'active')}
+              aria-pressed={favoritesOnly}
+              onClick={() => setFavoritesOnly((value) => !value)}
+            >
+              <Heart size={10} fill={favoritesOnly ? 'currentColor' : 'none'} />
+              Favorites
+              {favorites.length > 0 && <span className="skin-filter-count">{favorites.length}</span>}
+            </button>
           </div>
 
           {uploadError && (
@@ -373,64 +495,83 @@ export function SkinChanger() {
             </div>
           )}
 
-          {loading ? (
+          {loading && !favoritesOnly ? (
             <div className="skin-catalog-status">
               <Spinner size={15} /> Loading skins from minecraftskins.com…
             </div>
           ) : (
             <div className="skin-grid">
-              <button
-                type="button"
-                className={cn('skin-upload-card', customActive && 'active')}
-                onClick={() => fileRef.current?.click()}
-              >
-                <span className="skin-upload-mark">
-                  <ImagePlus size={22} />
-                </span>
-                <strong>{custom ? 'Replace upload' : 'Use your own'}</strong>
-                <small>64×64 or 64×32 PNG</small>
-              </button>
+              {!favoritesOnly && (
+                <button
+                  type="button"
+                  className={cn('skin-upload-card', customActive && 'active')}
+                  onClick={() => fileRef.current?.click()}
+                >
+                  <span className="skin-upload-mark">
+                    <ImagePlus size={22} />
+                  </span>
+                  <strong>{custom ? 'Replace upload' : 'Use your own'}</strong>
+                  <small>64×64 or 64×32 PNG</small>
+                </button>
+              )}
 
-              {entries.map((entry) => {
+              {visibleEntries.map((entry) => {
                 const active = !customActive && selectedEntry?.id === entry.id
+                const favorite = isFavorite(entry.id)
                 return (
-                  <button
-                    key={entry.id}
-                    type="button"
-                    className={cn('skin-card', active && 'active')}
-                    aria-pressed={active}
-                    onClick={() => chooseEntry(entry)}
-                  >
-                    <span className="skin-card-visual">
-                      <img
-                        className="skin-card-photo"
-                        src={entry.previewUrl}
-                        alt={`${entry.name} preview`}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                      />
-                      {active && (
-                        <span className="skin-card-check">
-                          <Check size={12} />
-                        </span>
-                      )}
-                      {entry.likes > 0 && (
-                        <span className="skin-card-likes">
-                          <Heart size={8} /> {formatCount(entry.likes)}
-                        </span>
-                      )}
-                    </span>
-                    <span className="skin-card-copy">
-                      <strong>{entry.name}</strong>
-                      <span>{entry.author || 'Unknown creator'}</span>
-                    </span>
-                  </button>
+                  <div className="skin-card-wrap" key={entry.id}>
+                    <button
+                      type="button"
+                      className={cn('skin-card', active && 'active')}
+                      aria-pressed={active}
+                      onClick={() => chooseEntry(entry)}
+                    >
+                      <span className="skin-card-visual">
+                        <img
+                          className="skin-card-photo"
+                          src={entry.previewUrl}
+                          alt={`${entry.name} preview`}
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        {active && (
+                          <span className="skin-card-check">
+                            <Check size={12} />
+                          </span>
+                        )}
+                        {entry.likes > 0 && (
+                          <span className="skin-card-likes">
+                            <Heart size={8} /> {formatCount(entry.likes)}
+                          </span>
+                        )}
+                      </span>
+                      <span className="skin-card-copy">
+                        <strong>{entry.name}</strong>
+                        <span>{entry.author || 'Unknown creator'}</span>
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      className={cn('skin-fav', favorite && 'active')}
+                      aria-label={
+                        favorite
+                          ? `Remove ${entry.name} from favorites`
+                          : `Save ${entry.name} to favorites`
+                      }
+                      aria-pressed={favorite}
+                      title={favorite ? 'Remove from favorites' : 'Save to favorites'}
+                      disabled={favoriteBusy === entry.id}
+                      onClick={() => void toggleFavorite(entry)}
+                    >
+                      <Heart size={12} fill={favorite ? 'currentColor' : 'none'} />
+                    </button>
+                  </div>
                 )
               })}
             </div>
           )}
 
-          {!loading && !catalogueError && entries.length === 0 && (
+          {!favoritesOnly && !loading && !catalogueError && entries.length === 0 && (
             <div className="skin-no-results">
               <Search size={20} />
               <strong>{query ? `No skins match “${query}”` : 'No skins on this page'}</strong>
@@ -438,7 +579,23 @@ export function SkinChanger() {
             </div>
           )}
 
-          {!loading && entries.length > 0 && hasMore && (
+          {favoritesOnly && favoriteMatches.length === 0 && (
+            <div className="skin-no-results">
+              <Heart size={20} />
+              <strong>
+                {favorites.length
+                  ? `No favorites match “${search.trim()}”`
+                  : 'No favorite skins yet'}
+              </strong>
+              <span>
+                {favorites.length
+                  ? 'Try another search.'
+                  : 'Tap the heart on any skin to save it here.'}
+              </span>
+            </div>
+          )}
+
+          {!favoritesOnly && !loading && entries.length > 0 && hasMore && (
             <div className="skin-load-more-row">
               <button
                 type="button"
@@ -457,10 +614,14 @@ export function SkinChanger() {
         <aside className="skin-stage-card glass glass--strong" aria-label="Selected skin">
           <div className="skin-stage-top">
             <span className="skin-stage-kicker">
-              <span className="live-dot" /> Live preview
+              <span className="live-dot" /> {stageIsWorn ? 'Currently wearing' : 'Live preview'}
             </span>
             <span className="skin-stage-number">
-              {loading ? 'Connecting…' : `${entries.length} from the Skindex`}
+              {loading && !favoritesOnly
+                ? 'Connecting…'
+                : favoritesOnly
+                  ? `${favorites.length} favorites`
+                  : `${entries.length} from the Skindex`}
             </span>
           </div>
 
@@ -500,11 +661,39 @@ export function SkinChanger() {
             <div className="skin-stage-title-row">
               <div>
                 <span className="skin-stage-overline">
-                  {customActive ? 'Your upload' : selectedEntry ? 'minecraftskins.com' : 'Skin library'}
+                  {stageIsWorn
+                    ? 'Currently wearing'
+                    : customActive
+                      ? 'Your upload'
+                      : selectedEntry
+                        ? 'minecraftskins.com'
+                        : 'Skin library'}
                 </span>
                 <h2>{stageName || 'No skin selected'}</h2>
               </div>
-              <Chip tone="muted">{stageVariant === 'slim' ? 'Slim' : 'Classic'}</Chip>
+              <div className="skin-stage-title-actions">
+                <Chip tone="muted">{stageVariant === 'slim' ? 'Slim' : 'Classic'}</Chip>
+                {selectedEntry && (
+                  <button
+                    type="button"
+                    className={cn('skin-stage-fav', isFavorite(selectedEntry.id) && 'active')}
+                    aria-label={
+                      isFavorite(selectedEntry.id)
+                        ? `Remove ${selectedEntry.name} from favorites`
+                        : `Save ${selectedEntry.name} to favorites`
+                    }
+                    aria-pressed={isFavorite(selectedEntry.id)}
+                    title={isFavorite(selectedEntry.id) ? 'Remove from favorites' : 'Save to favorites'}
+                    disabled={favoriteBusy === selectedEntry.id}
+                    onClick={() => void toggleFavorite(selectedEntry)}
+                  >
+                    <Heart
+                      size={13}
+                      fill={isFavorite(selectedEntry.id) ? 'currentColor' : 'none'}
+                    />
+                  </button>
+                )}
+              </div>
             </div>
 
             {customActive ? (
@@ -529,18 +718,25 @@ export function SkinChanger() {
                   </button>
                 </div>
               </div>
-            ) : (
-              selectedEntry && (
-                <button
-                  type="button"
-                  className="skin-stage-credit"
-                  onClick={() => void api.app.openExternal(selectedEntry.pageUrl)}
-                >
-                  {selectedEntry.author ? `By ${selectedEntry.author}` : 'Open skin page'}
-                  <ExternalLink size={10} />
-                </button>
-              )
-            )}
+            ) : selectedEntry ? (
+              <button
+                type="button"
+                className="skin-stage-credit"
+                onClick={() => void api.app.openExternal(selectedEntry.pageUrl)}
+              >
+                {selectedEntry.author ? `By ${selectedEntry.author}` : 'Open skin page'}
+                <ExternalLink size={10} />
+              </button>
+            ) : selection?.pageUrl ? (
+              <button
+                type="button"
+                className="skin-stage-credit"
+                onClick={() => void api.app.openExternal(selection.pageUrl as string)}
+              >
+                {selection.author ? `By ${selection.author}` : 'Open skin page'}
+                <ExternalLink size={10} />
+              </button>
+            ) : null}
 
             {textureError && !customActive && (
               <div className="skin-apply-error" role="alert">
@@ -569,19 +765,22 @@ export function SkinChanger() {
               )}
             </div>
 
-            {selectedApplied ? (
+            {stageIsWorn ? (
               <div className="skin-applied-note" role="status">
                 <CheckCircle2 size={17} />
                 <div>
-                  <strong>Applied to {selectedApplied.name}</strong>
-                  <span>Join a world or restart Minecraft to see it in game.</span>
+                  <strong>{stageName || 'Your skin'} is on your Minecraft profile</strong>
+                  <span>
+                    It stays until you apply another skin. Join a world or restart Minecraft to see
+                    a change.
+                  </span>
                 </div>
               </div>
             ) : (
               <button
                 type="button"
                 className="btn btn-primary btn-block skin-apply-button"
-                disabled={busy || !stageTexture}
+                disabled={busy || !stageTexture || !stageMeta}
                 onClick={() => void applySkin()}
               >
                 {busy ? (

@@ -15,7 +15,9 @@ import type {
   ProjectType,
   ServerEntry,
   Settings,
+  SkinCatalogEntry,
   SkinCatalogRequest,
+  SkinSelectionMeta,
   WallpaperMode,
   World,
   LanguageCode,
@@ -29,6 +31,12 @@ import { applyMinecraftSkin } from './accountSkin'
 import { applyPotatoGraphics } from './graphics'
 import { clearSkin, loadSkins, saveSkin } from './skins'
 import { catalogSkins, readCatalogTexture } from './skinCatalog'
+import {
+  loadSkinFavorites,
+  loadSkinSelection,
+  saveSkinSelection,
+  setSkinFavorite
+} from './skinLibrary'
 import { exportTriadPack, importTriadPack } from './transfer'
 import { cancelLogin, offlineUuid, startMicrosoftLogin, validateOfflineName } from './auth'
 import { ContentManager } from './content'
@@ -582,14 +590,34 @@ export function registerIpc(services: Services): void {
     saveSkin(kind, dataUrl)
   )
   ipcMain.handle('skins:clear', async (_event, kind: 'skin' | 'cape') => clearSkin(kind))
-  ipcMain.handle('skins:apply', async (_event, dataUrl: string, variant: 'classic' | 'slim') =>
-    applyMinecraftSkin(store, dataUrl, variant)
+  ipcMain.handle(
+    'skins:apply',
+    async (
+      _event,
+      dataUrl: string,
+      variant: 'classic' | 'slim',
+      meta?: SkinSelectionMeta
+    ) => {
+      const result = await applyMinecraftSkin(store, dataUrl, variant)
+      // Keep the worn skin in Triad after closing the launcher or leaving the
+      // Skin Changer, and mirror it into the local skin assets.
+      await saveSkinSelection(dataUrl, variant, meta, result.appliedAt).catch(() => null)
+      await saveSkin('skin', dataUrl).catch(() => undefined)
+      return result
+    }
   )
   ipcMain.handle('skins:catalog', async (_event, request: SkinCatalogRequest) =>
     catalogSkins(request)
   )
   ipcMain.handle('skins:texture', async (_event, request: { id: string; pageUrl: string }) =>
     readCatalogTexture(request)
+  )
+  ipcMain.handle('skins:selection', async () => loadSkinSelection())
+  ipcMain.handle('skins:favorites', async () => loadSkinFavorites())
+  ipcMain.handle(
+    'skins:setFavorite',
+    async (_event, entry: SkinCatalogEntry, favorite: boolean) =>
+      setSkinFavorite(entry, favorite === true)
   )
   ipcMain.handle('auto:status', async () => auto.status())
   ipcMain.handle('auto:run', async () => auto.run())
