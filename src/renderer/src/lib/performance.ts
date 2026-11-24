@@ -392,6 +392,86 @@ export const PERFORMANCE_MODS: PerformanceMod[] = [
     category: 'Rendering',
     loaders: ['fabric', 'quilt', 'neoforge'],
     optional: true
+  },
+  {
+    projectId: 'KuNKN7d2',
+    title: 'Noisium',
+    description: 'Optimises world generation so new chunks load with fewer CPU spikes and less stutter.',
+    category: 'Worldgen',
+    loaders: ['fabric', 'forge', 'neoforge', 'quilt'],
+    icon: 'https://cdn.modrinth.com/data/KuNKN7d2/7490b4d8e08bde8df44b2a71774edf2fe3176c83_96.webp'
+  },
+  {
+    projectId: 'NRjRiSSD',
+    title: 'Memory Leak Fix',
+    description: 'Patches vanilla memory leaks that slowly eat RAM during long play sessions.',
+    category: 'Memory',
+    loaders: ['fabric', 'forge', 'quilt'],
+    icon: 'https://cdn.modrinth.com/data/NRjRiSSD/a279c19f9c3574339fa90f675aa8a94f8f6cff92_96.webp'
+  },
+  {
+    projectId: 'QwxR6Gcd',
+    title: 'Debugify',
+    description: 'Fixes dozens of vanilla bugs, including several that cause lag and visual glitches.',
+    category: 'Bug fixes',
+    loaders: ['fabric', 'forge', 'quilt'],
+    icon: 'https://cdn.modrinth.com/data/QwxR6Gcd/d16ec025a7f2d9908248bb4d1477e3e624a2f17f_96.webp'
+  },
+  {
+    projectId: 'H8CaAYZC',
+    title: 'Starlight',
+    description: 'Rewrites the light engine for faster lighting updates and smoother chunk loading.',
+    category: 'Lighting',
+    loaders: ['fabric'],
+    icon: 'https://cdn.modrinth.com/data/H8CaAYZC/aa11bf788b9893370ff1e26af1c275dfd7590c59_96.webp'
+  },
+  {
+    projectId: 'iRfIGC1s',
+    title: 'Starlight (Forge)',
+    description: 'The Forge light-engine rewrite, for faster lighting and less chunk-load stutter.',
+    category: 'Lighting',
+    loaders: ['forge'],
+    icon: 'https://cdn.modrinth.com/data/iRfIGC1s/aa11bf788b9893370ff1e26af1c275dfd7590c59_96.webp'
+  },
+  {
+    projectId: 'OVuFYfre',
+    title: 'Enhanced Block Entities',
+    description: 'Renders chests, signs, beds and other block entities with far fewer draw calls.',
+    category: 'Rendering',
+    loaders: ['fabric', 'quilt'],
+    icon: 'https://cdn.modrinth.com/data/OVuFYfre/7313d540ef9514d8680acd5b3feb6a5a079f20fe_96.webp'
+  },
+  {
+    projectId: 'I2K4u1Q7',
+    title: 'Pluto',
+    description: 'A Forge networking optimisation that smooths multiplayer and integrated servers.',
+    category: 'Networking',
+    loaders: ['forge'],
+    icon: 'https://cdn.modrinth.com/data/I2K4u1Q7/861d7ba489d59bce7606068ad762c07af8ac6108_96.webp'
+  },
+  {
+    projectId: 'e6vNsbAm',
+    title: 'VintageFix',
+    description: 'Mixin and memory optimisations for Forge packs, especially older game versions.',
+    category: 'Memory',
+    loaders: ['forge'],
+    icon: 'https://cdn.modrinth.com/data/e6vNsbAm/f4301c04ac94af39af8bfcc61cbcb20a505d459b.png'
+  },
+  {
+    projectId: 'wnEe9KBa',
+    title: 'Very Many Players',
+    description: 'Server-side tuning that keeps busy worlds and integrated servers smooth.',
+    category: 'Simulation',
+    loaders: ['fabric'],
+    icon: 'https://cdn.modrinth.com/data/wnEe9KBa/0bb4b66e80c6cca9c37f6f1021a94670d6f820dc_96.webp'
+  },
+  {
+    projectId: 'LlSMGYzF',
+    title: 'Very Many Players (Forge)',
+    description: 'The Forge build of the busy-world simulation and tick optimisation.',
+    category: 'Simulation',
+    loaders: ['forge'],
+    icon: 'https://cdn.modrinth.com/data/LlSMGYzF/0bb4b66e80c6cca9c37f6f1021a94670d6f820dc_96.webp'
   }
 ]
 

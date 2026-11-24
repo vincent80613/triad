@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { AutoDownloader } from './auto'
 import { ContentManager } from './content'
+import { ServerManager } from './hosting'
 import { bindWindow, events } from './events'
 import { registerIpc, type Services } from './ipc'
 import { Launcher } from './launch'
@@ -108,6 +109,7 @@ if (!hasLock) {
     const presence = new DiscordPresence()
     const launcher = new Launcher(store, presence)
     const auto = new AutoDownloader(store, tasks, content)
+    const hosting = new ServerManager(store)
     const updater = new Updater(() => window)
 
     services = {
@@ -116,6 +118,7 @@ if (!hasLock) {
       content,
       launcher,
       auto,
+      hosting,
       updater,
       getWindow: () => window
     }
@@ -143,7 +146,9 @@ if (!hasLock) {
     if (process.platform !== 'darwin') app.quit()
   })
 
-  app.on('before-quit', () => {
+  let shuttingDown = false
+
+  function shutdownServices(): void {
     services?.launcher.dispose()
     services?.auto.stop()
     services?.updater.stop()
@@ -151,5 +156,21 @@ if (!hasLock) {
     // Minecraft runs in its own detached process so closing Triad does not
     // interrupt a game that is already running.
     services?.store.save(true)
+  }
+
+  app.on('before-quit', (event) => {
+    if (shuttingDown) return
+    // Hosted servers live in this app, so save their worlds before quitting.
+    if (services?.hosting.runningCount()) {
+      event.preventDefault()
+      shuttingDown = true
+      void services.hosting.dispose().finally(() => {
+        shutdownServices()
+        app.quit()
+      })
+      return
+    }
+    shuttingDown = true
+    shutdownServices()
   })
 }

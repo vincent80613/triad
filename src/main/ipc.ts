@@ -1,11 +1,13 @@
 import { app, dialog, ipcMain, shell, BrowserWindow } from 'electron'
-import { cp, readdir, rm, stat } from 'node:fs/promises'
+import { cp, mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import os from 'node:os'
 import type {
   Account,
   AppInfo,
+  CreateHostedServerInput,
   CreateInstanceInput,
+  HostedServerPatch,
   Instance,
   LoaderType,
   ModUpdate,
@@ -13,6 +15,7 @@ import type {
   ProjectType,
   ServerEntry,
   Settings,
+  SkinCatalogRequest,
   WallpaperMode,
   World,
   LanguageCode,
@@ -20,9 +23,12 @@ import type {
 } from '@shared/types'
 import { explainAuthError } from '@shared/authErrors'
 import type { AutoDownloader } from './auto'
+import type { ServerManager } from './hosting'
 import type { Updater } from './updater'
 import { applyMinecraftSkin } from './accountSkin'
+import { applyPotatoGraphics } from './graphics'
 import { clearSkin, loadSkins, saveSkin } from './skins'
+import { catalogSkins, readCatalogTexture } from './skinCatalog'
 import { exportTriadPack, importTriadPack } from './transfer'
 import { cancelLogin, offlineUuid, startMicrosoftLogin, validateOfflineName } from './auth'
 import { ContentManager } from './content'
@@ -41,6 +47,7 @@ export interface Services {
   content: ContentManager
   launcher: Launcher
   auto: AutoDownloader
+  hosting: ServerManager
   updater: Updater
   getWindow: () => BrowserWindow | null
 }
@@ -69,6 +76,10 @@ function sanitizeSettings(patch: Partial<Settings>): Partial<Settings> {
   if (typeof patch.closeOnLaunch === 'boolean') next.closeOnLaunch = patch.closeOnLaunch
   if (typeof patch.showSnapshots === 'boolean') next.showSnapshots = patch.showSnapshots
   if (typeof patch.memorySaver === 'boolean') next.memorySaver = patch.memorySaver
+  if (typeof patch.potatoGraphics === 'boolean') next.potatoGraphics = patch.potatoGraphics
+  if (patch.potatoGraphicsLevel !== undefined) {
+    next.potatoGraphicsLevel = clamp(patch.potatoGraphicsLevel, 25, 100, 100)
+  }
   if (typeof patch.javaPath === 'string') next.javaPath = patch.javaPath.trim().slice(0, 500)
   if (patch.uiDensity === 'compact' || patch.uiDensity === 'comfortable' || patch.uiDensity === 'spacious') {
     next.uiDensity = patch.uiDensity as UiDensity
@@ -106,6 +117,26 @@ function sanitizeSettings(patch: Partial<Settings>): Partial<Settings> {
   return next
 }
 
+async function applyPotatoGraphicsForAll(
+  services: Services,
+  settings: Settings
+): Promise<{ updated: number; failed: number }> {
+  let updated = 0
+  let failed = 0
+  for (const instance of services.store.data.instances) {
+    try {
+      await applyPotatoGraphics(
+        services.store.minecraftDir(instance.id),
+        settings.potatoGraphicsLevel
+      )
+      updated += 1
+    } catch {
+      failed += 1
+    }
+  }
+  return { updated, failed }
+}
+
 function normalizeServer(input: Partial<ServerEntry> | undefined, fallbackName = ''): ServerEntry {
   const raw = String(input?.address ?? '')
     .trim()
@@ -137,7 +168,7 @@ function applyWallpaper(services: Services, mode: WallpaperMode): void {
 }
 
 export function registerIpc(services: Services): void {
-  const { store, tasks, content, launcher, auto, updater } = services
+  const { store, tasks, content, launcher, auto, hosting, updater } = services
 
   ipcMain.handle('app:info', async (): Promise<AppInfo> => {
     const build = Number(os.release().split('.')[2] ?? 0)
@@ -201,6 +232,23 @@ export function registerIpc(services: Services): void {
     }
     if (patch.discordHideServerAddress !== undefined) {
       launcher.refreshPresence()
+    }
+    if (patch.potatoGraphics !== undefined || patch.potatoGraphicsLevel !== undefined) {
+      if (settings.potatoGraphics) {
+        const result = await applyPotatoGraphicsForAll(services, settings)
+        if (patch.potatoGraphics === true) {
+          events.toast({
+            title: 'Potato graphics enabled',
+            description:
+              result.updated > 0
+                ? `Video settings updated for ${result.updated} instance${
+                    result.updated === 1 ? '' : 's'
+                  }. They apply when you next launch the game.`
+                : 'Video settings will be applied when you launch a game.',
+            variant: result.failed ? 'default' : 'success'
+          })
+        }
+      }
     }
     events.dataChanged('settings')
     return settings
@@ -537,12 +585,67 @@ export function registerIpc(services: Services): void {
   ipcMain.handle('skins:apply', async (_event, dataUrl: string, variant: 'classic' | 'slim') =>
     applyMinecraftSkin(store, dataUrl, variant)
   )
+  ipcMain.handle('skins:catalog', async (_event, request: SkinCatalogRequest) =>
+    catalogSkins(request)
+  )
+  ipcMain.handle('skins:texture', async (_event, request: { id: string; pageUrl: string }) =>
+    readCatalogTexture(request)
+  )
   ipcMain.handle('auto:status', async () => auto.status())
   ipcMain.handle('auto:run', async () => auto.run())
   ipcMain.handle('updater:status', async () => updater.status())
   ipcMain.handle('updater:check', async () => await updater.check())
   ipcMain.handle('updater:download', async () => await updater.download())
   ipcMain.handle('updater:install', async () => await updater.install())
+
+  ipcMain.handle('hosting:list', async () => store.data.servers)
+  ipcMain.handle('hosting:states', async () => hosting.states())
+  ipcMain.handle('hosting:create', async (_event, input: CreateHostedServerInput) =>
+    hosting.create(input)
+  )
+  ipcMain.handle('hosting:update', async (_event, id: string, patch: HostedServerPatch) =>
+    hosting.update(String(id), patch ?? {})
+  )
+  ipcMain.handle('hosting:remove', async (_event, id: string) => {
+    await hosting.remove(String(id))
+  })
+  ipcMain.handle('hosting:start', async (_event, id: string) => {
+    await hosting.start(String(id))
+  })
+  ipcMain.handle('hosting:stop', async (_event, id: string) => {
+    await hosting.stop(String(id))
+  })
+  ipcMain.handle('hosting:command', async (_event, id: string, command: string) => {
+    hosting.sendCommand(String(id), String(command ?? ''))
+  })
+  ipcMain.handle('hosting:logs', async (_event, id: string) => hosting.logs(String(id)))
+  ipcMain.handle('hosting:addCommand', async (_event, id: string, label: string, command: string) =>
+    hosting.addCommand(String(id), String(label ?? ''), String(command ?? ''))
+  )
+  ipcMain.handle('hosting:removeCommand', async (_event, id: string, commandId: string) =>
+    hosting.removeCommand(String(id), String(commandId))
+  )
+  ipcMain.handle('hosting:openFolder', async (_event, id: string) => {
+    const server = store.requireServer(String(id))
+    await shell.openPath(store.serverDir(server.id))
+  })
+  ipcMain.handle('hosting:import', async () => {
+    const result = await dialog.showOpenDialog({
+      title: 'Import an existing Minecraft server folder',
+      buttonLabel: 'Import server',
+      properties: ['openDirectory']
+    })
+    if (result.canceled || !result.filePaths[0]) return null
+    return await hosting.importFolder(result.filePaths[0])
+  })
+  ipcMain.handle('hosting:backups', async (_event, id: string) => hosting.backups(String(id)))
+  ipcMain.handle('hosting:backup', async (_event, id: string) => hosting.backup(String(id)))
+  ipcMain.handle('hosting:openBackups', async (_event, id: string) => {
+    const server = store.requireServer(String(id))
+    const dir = join(store.serverDir(server.id), 'backups')
+    await mkdir(dir, { recursive: true })
+    await shell.openPath(dir)
+  })
 
   ipcMain.handle('tasks:list', async () => tasks.list())
   ipcMain.handle('tasks:cancel', async (_event, id: string) => tasks.cancel(String(id)))

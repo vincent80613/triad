@@ -79,8 +79,9 @@ cannot guarantee an immediate SmartScreen reputation for a new certificate.
 
 ## Publishing an update
 
-1. Update `version` in `package.json` and add matching release notes under
-   `src/shared/releaseNotes.json`.
+1. Builds bump the patch version automatically (`1.0.2` -> `1.0.3`) and add a
+   maintenance entry under `src/shared/releaseNotes.json` if that version has
+   no notes yet. Edit that file before building if you want custom notes.
 2. Publish with `send.bat` (below), or commit and push a matching tag to use
    the **Release Triad** GitHub Actions workflow:
 
@@ -101,9 +102,11 @@ cannot guarantee an immediate SmartScreen reputation for a new certificate.
 `send.bat` is a local publisher for Windows. It needs Node.js, a **public**
 GitHub repository and the GitHub CLI signed in with `gh auth login`.
 
-Before running it, bump `version` in `package.json` and add an entry for that
-same version to `src/shared/releaseNotes.json`. The launcher compares versions,
-so publishing the same version again does not reach installed users.
+A fresh build bumps the patch version automatically and adds a maintenance
+note if the new version has none. The launcher compares versions, so rebuilding
+and publishing produces a higher version that installed users can receive. Add
+custom notes under `src/shared/releaseNotes.json` before building if you do not
+want the automatic maintenance text.
 
 Double-click `send.bat`, or run it with the link or local path and repository:
 
@@ -122,7 +125,8 @@ send.bat "release\Triad-Setup-1.0.2.exe" "owner/repo"
   to release assets uploaded by `gh`, so a 100+ MB installer is fine.
 - **With a blank link:** `send.bat` configures the feed for the repository,
   runs `build.bat`, and publishes the freshly built installer, manifest and
-  patch notes. This is the easiest path when building on this machine.
+  patch notes. `build.bat` increments the patch version first, so each fresh
+  publish is a new version. This is the easiest path when building here.
 - **Feed setup:** `send.bat` writes
   `https://github.com/<owner>/<repo>/releases/latest/download` to
   `resources/update-feed.json`. An installer built **before** that feed was

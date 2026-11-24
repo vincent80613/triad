@@ -1,6 +1,6 @@
 import { app } from 'electron'
 import { join } from 'node:path'
-import type { AppData, Instance, ModRecord, Settings } from '@shared/types'
+import type { AppData, HostedServer, Instance, ModRecord, Settings } from '@shared/types'
 import { DEFAULT_SETTINGS } from '@shared/types'
 import { ensureDir, readJson, writeJson } from './util'
 
@@ -9,6 +9,7 @@ export class Store {
   readonly backupFile: string
   readonly instancesRoot: string
   readonly sharedDir: string
+  readonly serversRoot: string
   data: AppData
   private saveTimer: NodeJS.Timeout | null = null
   private writeChain: Promise<void> = Promise.resolve()
@@ -19,6 +20,7 @@ export class Store {
     this.backupFile = join(userData, 'triad.backup.json')
     this.instancesRoot = join(userData, 'instances')
     this.sharedDir = join(userData, 'minecraft')
+    this.serversRoot = join(userData, 'servers')
     this.data = {
       version: 1,
       settings: { ...DEFAULT_SETTINGS },
@@ -26,13 +28,15 @@ export class Store {
       activeInstanceId: null,
       account: null,
       stats: { days: {}, sessions: [] },
-      mods: {}
+      mods: {},
+      servers: []
     }
   }
 
   async init(): Promise<void> {
     await ensureDir(this.instancesRoot)
     await ensureDir(this.sharedDir)
+    await ensureDir(this.serversRoot)
     let loaded = await readJson<Partial<AppData> | null>(this.file, null)
     let restored = false
     if (!loaded || typeof loaded !== 'object' || typeof loaded.version !== 'number') {
@@ -54,6 +58,7 @@ export class Store {
           sessions: Array.isArray(loaded.stats?.sessions) ? loaded.stats.sessions : []
         },
         mods: loaded.mods && typeof loaded.mods === 'object' ? loaded.mods : {},
+        servers: Array.isArray(loaded.servers) ? loaded.servers : [],
         lastSeenVersion: typeof loaded.lastSeenVersion === 'string' ? loaded.lastSeenVersion : undefined
       }
     }
@@ -116,6 +121,25 @@ export class Store {
 
   instanceDir(id: string): string {
     return join(this.instancesRoot, id)
+  }
+
+  getServer(id: string): HostedServer | undefined {
+    return this.data.servers.find((server) => server.id === id)
+  }
+
+  requireServer(id: string): HostedServer {
+    const server = this.getServer(id)
+    if (!server) throw new Error('Server not found')
+    return server
+  }
+
+  serverDir(id: string): string {
+    return join(this.serversRoot, id)
+  }
+
+  removeServer(id: string): void {
+    this.data.servers = this.data.servers.filter((server) => server.id !== id)
+    this.save()
   }
 
   minecraftDir(id: string): string {

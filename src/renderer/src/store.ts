@@ -23,6 +23,7 @@ export type Route =
   | 'instance'
   | 'browse'
   | 'performance'
+  | 'hosting'
   | 'downloads'
   | 'skins'
   | 'settings'

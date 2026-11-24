@@ -22,8 +22,9 @@ echo.
 echo  If you leave it blank, send.bat configures the feed,
 echo  builds a fresh installer, and publishes it.
 echo.
-echo  Bump package.json and add matching patch notes before
-echo  sending a version that users do not already have.
+echo  Each fresh rebuild gets a higher patch version and an
+echo  automatic maintenance note. Add custom notes in
+echo  src/shared/releaseNotes.json before sending if you want.
 echo.
 
 set "NEW_LAUNCHER_URL="

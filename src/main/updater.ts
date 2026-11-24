@@ -1,12 +1,17 @@
-import { app, dialog, type BrowserWindow } from 'electron'
+import { app, dialog, powerMonitor, type BrowserWindow } from 'electron'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { autoUpdater } from 'electron-updater'
 import type { UpdaterStatus } from '@shared/types'
 import { events } from './events'
 
-const CHECK_INTERVAL = 60 * 60_000
+const CHECK_INTERVAL = 15 * 60_000
+const FOCUS_CHECK_INTERVAL = 5 * 60_000
 const STARTUP_DELAY = 4_000
+
+// Every installed build falls back to this feed, so a missing or blank bundled
+// update-feed.json can never leave a launcher without update checks.
+const DEFAULT_UPDATE_FEED = 'https://github.com/vincent80613/triad/releases/latest/download'
 
 interface UpdateFeedConfig {
   url?: string
@@ -40,6 +45,30 @@ function readFeedConfig(): UpdateFeedConfig {
   }
 }
 
+function appUpdatePath(): string {
+  return app.isPackaged
+    ? join(process.resourcesPath, 'app-update.yml')
+    : join(app.getAppPath(), 'resources', 'app-update.yml')
+}
+
+function readAppUpdateFeed(): string | null {
+  try {
+    const text = readFileSync(appUpdatePath(), 'utf8')
+    const match = text.match(/^\s*url:\s*["']?([^"'\r\n]+?)["']?\s*$/m)
+    return match ? match[1] : null
+  } catch {
+    return null
+  }
+}
+
+function resolveFeedUrl(): string | null {
+  return (
+    normalizeFeedUrl(readFeedConfig().url) ??
+    normalizeFeedUrl(readAppUpdateFeed()) ??
+    normalizeFeedUrl(DEFAULT_UPDATE_FEED)
+  )
+}
+
 function friendlyError(error: unknown): string {
   const raw = error instanceof Error ? error.message : String(error)
   return raw.replace(/\s+/g, ' ').trim().slice(0, 240) || 'The update check failed.'
@@ -58,6 +87,9 @@ export class Updater {
   private announcedVersion?: string
   private promptedVersion?: string
   private lastProgressAt = 0
+  private lastCheckAt = 0
+  private focusHandler: (() => void) | null = null
+  private resumeHandler: (() => void) | null = null
 
   constructor(private getWindow: () => BrowserWindow | null) {
     autoUpdater.on('checking-for-update', () => {
@@ -139,7 +171,7 @@ export class Updater {
       return
     }
 
-    const feedUrl = normalizeFeedUrl(readFeedConfig().url)
+    const feedUrl = resolveFeedUrl()
     if (!feedUrl) {
       this.setStatus({
         phase: 'disabled',
@@ -177,13 +209,25 @@ export class Updater {
 
     this.startTimeout = setTimeout(() => void this.check(), STARTUP_DELAY)
     this.timer = setInterval(() => void this.check(), CHECK_INTERVAL)
+
+    this.focusHandler = () => {
+      if (Date.now() - this.lastCheckAt < FOCUS_CHECK_INTERVAL) return
+      void this.check()
+    }
+    this.resumeHandler = () => void this.check()
+    app.on('browser-window-focus', this.focusHandler)
+    powerMonitor.on('resume', this.resumeHandler)
   }
 
   stop(): void {
     if (this.startTimeout) clearTimeout(this.startTimeout)
     if (this.timer) clearInterval(this.timer)
+    if (this.focusHandler) app.removeListener('browser-window-focus', this.focusHandler)
+    if (this.resumeHandler) powerMonitor.removeListener('resume', this.resumeHandler)
     this.startTimeout = null
     this.timer = null
+    this.focusHandler = null
+    this.resumeHandler = null
     this.started = false
   }
 
@@ -202,6 +246,7 @@ export class Updater {
       return this.status()
     }
 
+    this.lastCheckAt = Date.now()
     this.setStatus({
       phase: 'checking',
       message: 'Checking for a new launcher build…',

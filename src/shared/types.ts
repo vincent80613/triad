@@ -19,6 +19,8 @@ export interface Settings {
   closeOnLaunch: boolean
   showSnapshots: boolean
   memorySaver: boolean
+  potatoGraphics: boolean
+  potatoGraphicsLevel: number
   clientId: string
   uiDensity: UiDensity
   fontScale: number
@@ -46,6 +48,8 @@ export const DEFAULT_SETTINGS: Settings = {
   closeOnLaunch: false,
   showSnapshots: false,
   memorySaver: true,
+  potatoGraphics: false,
+  potatoGraphicsLevel: 100,
   clientId: '00000000402b5328',
   uiDensity: 'comfortable',
   fontScale: 100,
@@ -63,6 +67,85 @@ export const DEFAULT_SETTINGS: Settings = {
 export interface ServerEntry {
   name: string
   address: string
+}
+
+export type ServerSoftware = 'vanilla' | 'fabric'
+export type WorldPreset = 'default' | 'flat' | 'large_biomes' | 'amplified' | 'island' | 'sky_island'
+export type IslandTheme = 'grass' | 'desert' | 'snow' | 'nether'
+export type HostedServerStatus =
+  | 'stopped'
+  | 'installing'
+  | 'starting'
+  | 'running'
+  | 'stopping'
+  | 'error'
+
+export interface HostedServerCommand {
+  id: string
+  label: string
+  command: string
+}
+
+export interface HostedServer {
+  id: string
+  name: string
+  mcVersion: string
+  software: ServerSoftware
+  loaderVersion?: string
+  port: number
+  memoryMb: number
+  created: number
+  lastStarted?: number
+  properties: Record<string, string>
+  commands: HostedServerCommand[]
+  address?: string
+  gamerules: Record<string, string>
+  worldPreset?: WorldPreset
+  islandTheme?: IslandTheme
+  autoSaveMinutes?: number
+  imported?: boolean
+  sourcePath?: string
+  jarFile?: string
+  javaMajor?: number
+}
+
+export interface HostedServerState {
+  id: string
+  status: HostedServerStatus
+  message?: string
+  players: number
+  progress?: number | null
+  startedAt?: number
+}
+
+export interface CreateHostedServerInput {
+  name: string
+  mcVersion: string
+  software: ServerSoftware
+  port: number
+  memoryMb: number
+  address?: string
+  worldPreset?: WorldPreset
+  islandTheme?: IslandTheme
+  levelSeed?: string
+}
+
+export interface HostedServerPatch {
+  name?: string
+  port?: number
+  memoryMb?: number
+  address?: string | null
+  properties?: Record<string, string>
+  gamerules?: Record<string, string>
+  worldPreset?: WorldPreset
+  islandTheme?: IslandTheme
+  autoSaveMinutes?: number
+}
+
+export interface ServerBackup {
+  name: string
+  path: string
+  createdAt: number
 }
 
 export interface Instance {
@@ -118,6 +201,41 @@ export interface SkinApplyResult {
   variant: SkinVariant
   appliedAt: number
   textureUrl?: string
+}
+
+export type SkinCatalogSort = 'top' | 'latest' | 'recently-commented'
+
+export interface SkinCatalogEntry {
+  id: string
+  name: string
+  slug: string
+  author: string
+  previewUrl: string
+  pageUrl: string
+  likes: number
+  comments: number
+}
+
+export interface SkinCatalogRequest {
+  sort: SkinCatalogSort
+  page: number
+  query?: string
+}
+
+export interface SkinCatalogPage {
+  entries: SkinCatalogEntry[]
+  page: number
+  sort: SkinCatalogSort
+  query: string
+  hasMore: boolean
+  source: 'minecraftskins.com'
+}
+
+export interface SkinCatalogTexture {
+  id: string
+  dataUrl: string
+  variant: SkinVariant
+  pageUrl: string
 }
 
 export interface AutoDownloadStatus {
@@ -216,6 +334,7 @@ export interface AppData {
   account: Account | null
   stats: Stats
   mods: Record<string, Record<string, ModRecord>>
+  servers: HostedServer[]
   lastSeenVersion?: string
 }
 
@@ -449,6 +568,8 @@ export interface Api {
     save: (kind: 'skin' | 'cape', dataUrl: string) => Promise<SkinAssets>
     clear: (kind: 'skin' | 'cape') => Promise<SkinAssets>
     apply: (dataUrl: string, variant: SkinVariant) => Promise<SkinApplyResult>
+    catalog: (request: SkinCatalogRequest) => Promise<SkinCatalogPage>
+    texture: (request: { id: string; pageUrl: string }) => Promise<SkinCatalogTexture>
   }
   auto: {
     status: () => Promise<AutoDownloadStatus>
@@ -498,6 +619,24 @@ export interface Api {
     cancel: (id: string) => Promise<void>
     dismiss: (id: string) => Promise<void>
   }
+  hosting: {
+    list: () => Promise<HostedServer[]>
+    states: () => Promise<Record<string, HostedServerState>>
+    create: (input: CreateHostedServerInput) => Promise<HostedServer>
+    update: (id: string, patch: HostedServerPatch) => Promise<HostedServer>
+    remove: (id: string) => Promise<void>
+    start: (id: string) => Promise<void>
+    stop: (id: string) => Promise<void>
+    command: (id: string, command: string) => Promise<void>
+    logs: (id: string) => Promise<string[]>
+    addCommand: (id: string, label: string, command: string) => Promise<HostedServer>
+    removeCommand: (id: string, commandId: string) => Promise<HostedServer>
+    openFolder: (id: string) => Promise<void>
+    import: () => Promise<HostedServer | null>
+    backups: (id: string) => Promise<ServerBackup[]>
+    backup: (id: string) => Promise<ServerBackup>
+    openBackups: (id: string) => Promise<void>
+  }
   on: {
     task: (cb: (task: TaskState) => void) => () => void
     launchState: (cb: (state: LaunchState) => void) => () => void
@@ -509,6 +648,8 @@ export interface Api {
     maximized: (cb: (value: boolean) => void) => () => void
     updater: (cb: (status: UpdaterStatus) => void) => () => void
     toast: (cb: (toast: ToastInput) => void) => () => void
+    hostState: (cb: (state: HostedServerState) => void) => () => void
+    hostLog: (cb: (line: { id: string; line: string }) => void) => () => void
   }
 }
 

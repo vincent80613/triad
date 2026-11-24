@@ -5,6 +5,7 @@ import {
   Home,
   Library,
   Plus,
+  Server,
   Settings,
   Shirt,
   Sparkles
@@ -21,6 +22,7 @@ const NAV: { id: Route; label: Parameters<ReturnType<typeof useT>>[0]; icon: typ
   { id: 'browse', label: 'nav.browse', icon: Compass },
   { id: 'performance', label: 'nav.performance', icon: Gauge },
   { id: 'library', label: 'nav.library', icon: Library },
+  { id: 'hosting', label: 'nav.hosting', icon: Server },
   { id: 'downloads', label: 'nav.downloads', icon: Download },
   { id: 'skins', label: 'nav.skins', icon: Shirt },
   { id: 'settings', label: 'nav.settings', icon: Settings }

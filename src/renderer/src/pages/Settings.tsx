@@ -30,6 +30,12 @@ import {
   type UpdaterStatus,
   type WallpaperMode
 } from '@shared/types'
+import {
+  POTATO_MAX_LEVEL,
+  POTATO_MIN_LEVEL,
+  potatoLevelLabel,
+  potatoPreset
+} from '@shared/potato'
 import { api, errorMessage } from '../api'
 import { useApp } from '../store'
 import { LANGUAGES, useT } from '../i18n'
@@ -62,6 +68,9 @@ export function Settings() {
   const [skins, setSkins] = useState<SkinAssets>({})
   const clientIdDirty = clientId.trim() !== settings.clientId
   const windowsDesktopBlur = appInfo?.isWindows11 ?? false
+  const potato = potatoPreset(settings.potatoGraphicsLevel)
+  const potatoParticles =
+    potato.particles === 2 ? 'minimal particles' : potato.particles === 1 ? 'fewer particles' : 'normal particles'
 
   useEffect(() => {
     setClientId(settings.clientId)
@@ -134,7 +143,26 @@ export function Settings() {
   async function checkForUpdates(): Promise<void> {
     setUpdateChecking(true)
     try {
-      setUpdateStatus(await api.updater.check())
+      const status = await api.updater.check()
+      setUpdateStatus(status)
+      if (status.phase === 'idle') {
+        pushToast({
+          title: 'Triad is up to date',
+          description: appInfo?.version ? `You are running v${appInfo.version}.` : undefined,
+          variant: 'success'
+        })
+      } else if (status.phase === 'available') {
+        pushToast({
+          title: `Triad ${status.version} is available`,
+          description: 'Open Settings → Launcher updates to download it.'
+        })
+      } else if (status.phase === 'disabled' || status.phase === 'error') {
+        pushToast({
+          title: status.phase === 'disabled' ? 'Updates unavailable' : 'Update check failed',
+          description: status.message,
+          variant: 'error'
+        })
+      }
     } catch (error) {
       pushToast({ title: 'Update check failed', description: errorMessage(error), variant: 'error' })
     } finally {
@@ -197,13 +225,23 @@ export function Settings() {
           <h1 className="page-title">{t('settings.title')}</h1>
           <p className="page-sub">{t('settings.subtitle')}</p>
         </div>
-        {appInfo && (
-          <div className="page-actions">
-            <Chip tone="muted">
-              Triad {appInfo.version} · Electron {appInfo.electron}
-            </Chip>
-          </div>
-        )}
+        <div className="page-actions">
+          <Chip tone="muted">Triad v{appInfo?.version ?? '—'}</Chip>
+          <button
+            type="button"
+            className="btn btn-sm"
+            disabled={updateBusy || updateDisabled}
+            onClick={() => void checkForUpdates()}
+            title={updateStatus?.message ?? 'Check for a new Triad build'}
+          >
+            {updateChecking || updateStatus?.phase === 'checking' ? (
+              <Spinner size={13} />
+            ) : (
+              <RefreshCw size={13} />
+            )}
+            Check for updates
+          </button>
+        </div>
       </div>
 
       <div className="settings-tabs" role="tablist" aria-label="Settings sections">
@@ -631,6 +669,41 @@ export function Settings() {
                 </div>
                 <div className="settings-row">
                   <div className="settings-row-label">
+                    <strong>Potato graphics</strong>
+                    <span>
+                      {settings.potatoGraphics
+                        ? `${potatoLevelLabel(potato.level)} · ${potato.renderDistance} chunk render distance, ${potatoParticles}, no clouds or smooth lighting. Applied every time you press Play.`
+                        : 'Max-FPS video preset: lower chunk render distance, fewer particles, no clouds, shadows or smooth lighting. Applied every time you press Play.'}
+                    </span>
+                  </div>
+                  <Toggle
+                    label="Potato graphics"
+                    checked={settings.potatoGraphics}
+                    onChange={(value) => void setSettings({ potatoGraphics: value })}
+                  />
+                </div>
+                <div className={cn('settings-row column', !settings.potatoGraphics && 'is-disabled')}>
+                  <div className="settings-row-label">
+                    <strong>Potato intensity</strong>
+                    <span>
+                      {settings.potatoGraphics
+                        ? `How aggressive the preset is. ${potatoLevelLabel(potato.level)} keeps ${potato.renderDistance} chunks, ${potato.simulationDistance} simulation chunks and ${potato.mipmapLevels} mipmap levels.`
+                        : 'Turn on Potato graphics to choose how much it dials back.'}
+                    </span>
+                  </div>
+                  <Slider
+                    value={settings.potatoGraphicsLevel}
+                    min={POTATO_MIN_LEVEL}
+                    max={POTATO_MAX_LEVEL}
+                    step={5}
+                    display={String(settings.potatoGraphicsLevel)}
+                    suffix="%"
+                    disabled={!settings.potatoGraphics}
+                    onChange={(value) => void setSettings({ potatoGraphicsLevel: value })}
+                  />
+                </div>
+                <div className="settings-row">
+                  <div className="settings-row-label">
                     <strong>Show snapshots</strong>
                     <span>Include experimental versions when creating an instance.</span>
                   </div>
@@ -901,7 +974,7 @@ export function Settings() {
             <Section
               icon={<RefreshCw size={18} />}
               title="Launcher updates"
-              description="Triad checks for a new build when it opens and every hour. You choose when to download it, then restart to finish installing."
+              description="Triad checks for a new build when it opens, when you return to the window, and every 15 minutes. You choose when to download it, then restart to finish installing."
             >
               <div className="auto-downloader-card update-card">
                 <div className="auto-downloader-orbit">
@@ -945,7 +1018,7 @@ export function Settings() {
                         : 'Checking…'
                       : updateStatus?.phase === 'error'
                         ? 'Try again'
-                        : 'Check now'}
+                        : 'Check for updates'}
                   </button>
                 )}
               </div>

@@ -15,6 +15,10 @@ if errorlevel 1 goto :no_node
 where npm.cmd >nul 2>nul
 if errorlevel 1 goto :no_node
 
+echo Bumping launcher version...
+node scripts\bump-version.cjs
+if errorlevel 1 goto :failed
+
 for /f "usebackq delims=" %%V in (`node -p "require('./package.json').version"`) do set "APP_VERSION=%%V"
 
 if not exist "node_modules\" (

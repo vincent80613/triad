@@ -8,6 +8,7 @@ import {
   Play,
   Plus,
   Search,
+  Server,
   Settings,
   Shirt,
   UserRound
@@ -53,6 +54,7 @@ export function CommandPalette() {
       { id: 'browse', label: 'Browse mods', icon: <Compass size={15} /> },
       { id: 'performance', label: 'Open Performance', icon: <Gauge size={15} /> },
       { id: 'library', label: 'Open Library', icon: <Library size={15} /> },
+      { id: 'hosting', label: 'Host a Minecraft server', icon: <Server size={15} /> },
       { id: 'downloads', label: 'View Downloads', icon: <Download size={15} /> },
       { id: 'skins', label: 'Open Skin Changer', icon: <Shirt size={15} /> },
       { id: 'settings', label: 'Open Settings', icon: <Settings size={15} /> }

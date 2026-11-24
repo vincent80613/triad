@@ -11,6 +11,7 @@ import { explainAuthError } from '@shared/authErrors'
 import type { Account, Instance, LaunchState } from '@shared/types'
 import { ensureFreshAccount } from './auth'
 import { events } from './events'
+import { applyPotatoGraphics } from './graphics'
 import { ensureJava } from './java'
 import type { DiscordPresence } from './presence'
 import type { Store } from './store'
@@ -211,6 +212,13 @@ export class Launcher {
       })
       if (java.major < required) {
         throw new Error(`Minecraft ${instance.mcVersion} needs Java ${required} or newer.`)
+      }
+
+      if (this.store.settings.potatoGraphics) {
+        await applyPotatoGraphics(
+          this.store.minecraftDir(instance.id),
+          this.store.settings.potatoGraphicsLevel
+        ).catch(() => undefined)
       }
 
       const target = server ? parseServerAddress(server) : null

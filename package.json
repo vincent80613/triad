@@ -1,7 +1,7 @@
 {
   "name": "triad",
   "productName": "Triad",
-  "version": "1.0.1",
+  "version": "1.0.7",
   "description": "A liquid-glass Minecraft launcher with mod browsing, Microsoft sign-in and multiplayer",
   "author": "Triad",
   "main": "./out/main/index.js",

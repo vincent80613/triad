@@ -130,7 +130,8 @@ export function Slider({
   step = 1,
   onChange,
   suffix,
-  display
+  display,
+  disabled
 }: {
   value: number
   min: number
@@ -139,6 +140,7 @@ export function Slider({
   onChange: (value: number) => void
   suffix?: string
   display?: string
+  disabled?: boolean
 }) {
   const pct = ((value - min) / (max - min)) * 100
   return (
@@ -149,6 +151,7 @@ export function Slider({
         max={max}
         step={step}
         value={value}
+        disabled={disabled}
         style={{ '--fill': `${pct}%` } as CSSProperties}
         aria-label="Slider"
         onChange={(event) => onChange(Number(event.target.value))}

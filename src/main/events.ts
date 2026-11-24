@@ -1,5 +1,5 @@
 import type { BrowserWindow } from 'electron'
-import type { DataScope, TaskState, LaunchState, Account, AuthState, DeviceCodeInfo, ToastInput, UpdaterStatus } from '@shared/types'
+import type { DataScope, TaskState, LaunchState, Account, AuthState, DeviceCodeInfo, ToastInput, UpdaterStatus, HostedServerState } from '@shared/types'
 
 let target: BrowserWindow | null = null
 
@@ -23,5 +23,7 @@ export const events = {
   dataChanged: (scope: DataScope) => emit('data:changed', scope),
   maximized: (value: boolean) => emit('window:maximized', value),
   updater: (status: UpdaterStatus) => emit('updater:status', status),
-  toast: (toast: ToastInput) => emit('toast', toast)
+  toast: (toast: ToastInput) => emit('toast', toast),
+  hostState: (state: HostedServerState) => emit('host:state', state),
+  hostLog: (payload: { id: string; line: string }) => emit('host:log', payload)
 }

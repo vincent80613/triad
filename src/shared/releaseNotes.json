@@ -1,6 +1,177 @@
 {
   "releases": [
     {
+      "version": "1.0.7",
+      "title": "The Skindex skin library",
+      "date": "2026-11-24",
+      "sections": [
+        {
+          "title": "Skins",
+          "items": [
+            "The Skin Changer now uses minecraftskins.com (The Skindex) as its only catalogue. The built-in placeholder skins are gone.",
+            "Browse Top, Latest and Recently commented, search the whole site, and keep loading pages to reach the full library.",
+            "Every card shows the real preview, creator and likes. Selecting a skin fetches its exact 64×64 texture, detects Classic or Slim, and caches it locally.",
+            "Apply any Skindex skin to your Microsoft account, open its original page, or upload your own 64×64 PNG."
+          ]
+        },
+        {
+          "title": "Also in this build",
+          "items": [
+            "Everything from 1.0.6: custom server addresses, importing existing servers, world and island presets, 50+ settings, 27 gamerules, command help, item giving, backups and the expanded Hosting tabs."
+          ]
+        },
+        {
+          "title": "Notes",
+          "items": [
+            "The skin library streams from minecraftskins.com, so it needs an internet connection. Previewed skins stay cached on this PC, and the site may occasionally rate-limit requests."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.0.6",
+      "title": "Server hosting and the Skindex",
+      "date": "2026-11-24",
+      "sections": [
+        {
+          "title": "Hosting",
+          "items": [
+            "Choose your own server address: a domain with a real ending like .net, .com, .org or .gg, or an IPv4 or localhost address. Triad validates it and lets you copy it from the Hosting header.",
+            "Import a Minecraft server you already have: pick its folder, and Triad detects the version and jar, copies the world, settings, ops and whitelist into the launcher, and leaves the original folder untouched.",
+            "Six world presets, including starter island and sky island, with grass, desert, snow or Nether island themes and an optional seed.",
+            "More than 50 server settings, from MOTD, difficulty and whitelist to view distance, the Nether, structures, RCON, query and resource packs.",
+            "27 world rules with plain-English explanations, plus a reset-to-defaults button. Saved rules reapply when the server starts.",
+            "A searchable library of 85 commands with descriptions, a saved-command list and a give-item builder for 30 items.",
+            "Create and open world backups, set automatic saves, and configure network and performance options from the new Tools tab."
+          ]
+        },
+        {
+          "title": "Skins",
+          "items": [
+            "The Skin Changer now streams the minecraftskins.com (The Skindex) catalogue live instead of showing built-in placeholder skins.",
+            "Browse Top, Latest and Recently commented, search the whole site, and keep loading pages to reach the full catalogue.",
+            "Every card shows the real skin preview, its creator and likes. Selecting one fetches the exact texture, detects Classic or Slim, and caches it locally.",
+            "Apply any Skindex skin to your Microsoft account, open its original page, or keep uploading your own 64×64 PNG."
+          ]
+        },
+        {
+          "title": "Fixes and safeguards",
+          "items": [
+            "Clearing gamerules now removes the saved rules instead of merging them back in.",
+            "Saving an imported server keeps its original world generator unless you choose a new preset.",
+            "The Open backups folder action now creates the folder safely instead of copying the server into itself."
+          ]
+        },
+        {
+          "title": "Notes",
+          "items": [
+            "Servers run on this PC while Triad is open, and stop when the launcher closes.",
+            "A custom address still needs DNS and port forwarding before players outside your network can use it. Players on this PC can always join localhost on the server port.",
+            "The skin library needs an internet connection. Skins you have previewed are cached on this PC, and the site may occasionally rate-limit requests."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.0.5",
+      "title": "Your own server, built in",
+      "date": "2026-11-23",
+      "sections": [
+        {
+          "title": "Hosting",
+          "items": [
+            "New Hosting tab: create a Vanilla or Fabric Minecraft server for any release version, right inside Triad.",
+            "Triad downloads the official server jar, creates the world and starts the server for you.",
+            "A live console with command input, player count and clear start, stop and error states.",
+            "Configure the MOTD, port, memory, difficulty, gamemode, max players, view and simulation distance, spawn protection, PvP, online mode, whitelist, flight, command blocks and hardcore mode.",
+            "Save your own commands as one-click buttons and run them from the Commands tab.",
+            "Open the server folder to add datapacks, worlds or backups."
+          ]
+        },
+        {
+          "title": "Settings",
+          "items": [
+            "Settings now shows the installed Triad version and a Check for updates button, so you can check without waiting for the automatic check."
+          ]
+        },
+        {
+          "title": "Notes",
+          "items": [
+            "Servers run on this PC while Triad is open, and stop when the launcher closes.",
+            "Players on the same network can join with this PC's local IP and the server port; players outside it need port forwarding."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.0.4",
+      "title": "Potato graphics, dialled in",
+      "date": "2026-11-19",
+      "sections": [
+        {
+          "title": "Potato graphics",
+          "items": [
+            "Added a Potato intensity slider, from a light trim to full potato, so you choose how much the preset dials back.",
+            "The preset now writes Minecraft 1.21.11's quality settings too: graphics preset, see-through leaves, texture filtering, cloud distance, weather radius and chunk fade.",
+            "Full potato drops to 4 chunks, no mipmaps and 0.5x entity distance, and no longer caps FPS at 120.",
+            "Settings are written to every instance as soon as you change them, and again before every launch."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.0.3",
+      "title": "Potato graphics and a wider performance kit",
+      "date": "2026-11-19",
+      "sections": [
+        {
+          "title": "Potato graphics",
+          "items": [
+            "New Settings toggle for low-end PCs and maximum FPS.",
+            "Lowers render distance to 6 chunks, uses fast graphics, minimal particles, no clouds or shadows, and turns off smooth lighting and VSync before every launch.",
+            "Your other video, audio and control settings are kept; turn the toggle off to set things yourself again."
+          ]
+        },
+        {
+          "title": "More performance mods",
+          "items": [
+            "Added ten more one-click optimisations, including Noisium, Memory Leak Fix, Debugify, Starlight, Enhanced Block Entities, Pluto, VintageFix and Very Many Players.",
+            "Every recommended mod is still checked against the instance's Minecraft version and loader before it can be selected.",
+            "Fabric, Quilt, Forge and NeoForge instances all get their own compatible kit."
+          ]
+        },
+        {
+          "title": "Updates reach everyone",
+          "items": [
+            "Launchers now fall back to the public update feed if a build is missing its bundled feed, so an update can no longer be silently skipped.",
+            "Triad also checks when you return to the window, after the PC wakes, and every 15 minutes while it is open.",
+            "Anyone still on a build from before update support needs one manual install of this version; every build from here on updates itself."
+          ]
+        }
+      ]
+    },
+    {
+      "version": "1.0.2",
+      "title": "Update delivery is live",
+      "date": "2026-11-19",
+      "sections": [
+        {
+          "title": "Launcher updates",
+          "items": [
+            "This build verifies the automatic update path from GitHub.",
+            "When a newer version is published, Triad shows an Update banner, downloads it, and offers Restart & update.",
+            "Accounts, instances, mods, worlds and settings stay in place."
+          ]
+        },
+        {
+          "title": "Under the hood",
+          "items": [
+            "The installer includes the public update feed, so future versions can reach installed launchers."
+          ]
+        }
+      ]
+    },
+    {
       "version": "1.0.1",
       "title": "A brighter Triad, ready to update itself",
       "date": "2026-11-14",

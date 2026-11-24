@@ -58,7 +58,9 @@ const api: Api = {
     load: () => ipcRenderer.invoke('skins:load'),
     save: (kind, dataUrl) => ipcRenderer.invoke('skins:save', kind, dataUrl),
     clear: (kind) => ipcRenderer.invoke('skins:clear', kind),
-    apply: (dataUrl, variant) => ipcRenderer.invoke('skins:apply', dataUrl, variant)
+    apply: (dataUrl, variant) => ipcRenderer.invoke('skins:apply', dataUrl, variant),
+    catalog: (request) => ipcRenderer.invoke('skins:catalog', request),
+    texture: (request) => ipcRenderer.invoke('skins:texture', request)
   },
   auto: {
     status: () => ipcRenderer.invoke('auto:status'),
@@ -124,6 +126,26 @@ const api: Api = {
     cancel: (id) => ipcRenderer.invoke('tasks:cancel', id),
     dismiss: (id) => ipcRenderer.invoke('tasks:dismiss', id)
   },
+  hosting: {
+    list: () => ipcRenderer.invoke('hosting:list'),
+    states: () => ipcRenderer.invoke('hosting:states'),
+    create: (input) => ipcRenderer.invoke('hosting:create', input),
+    update: (id, patch) => ipcRenderer.invoke('hosting:update', id, patch),
+    remove: (id) => ipcRenderer.invoke('hosting:remove', id),
+    start: (id) => ipcRenderer.invoke('hosting:start', id),
+    stop: (id) => ipcRenderer.invoke('hosting:stop', id),
+    command: (id, command) => ipcRenderer.invoke('hosting:command', id, command),
+    logs: (id) => ipcRenderer.invoke('hosting:logs', id),
+    addCommand: (id, label, command) =>
+      ipcRenderer.invoke('hosting:addCommand', id, label, command),
+    removeCommand: (id, commandId) =>
+      ipcRenderer.invoke('hosting:removeCommand', id, commandId),
+    openFolder: (id) => ipcRenderer.invoke('hosting:openFolder', id),
+    import: () => ipcRenderer.invoke('hosting:import'),
+    backups: (id) => ipcRenderer.invoke('hosting:backups', id),
+    backup: (id) => ipcRenderer.invoke('hosting:backup', id),
+    openBackups: (id) => ipcRenderer.invoke('hosting:openBackups', id)
+  },
   on: {
     task: (cb) => subscribe('task:update', cb),
     launchState: (cb) => subscribe('launch:state', cb),
@@ -134,7 +156,9 @@ const api: Api = {
     dataChanged: (cb) => subscribe('data:changed', cb),
     maximized: (cb) => subscribe('window:maximized', cb),
     updater: (cb) => subscribe('updater:status', cb),
-    toast: (cb) => subscribe('toast', cb)
+    toast: (cb) => subscribe('toast', cb),
+    hostState: (cb) => subscribe('host:state', cb),
+    hostLog: (cb) => subscribe('host:log', cb)
   }
 }
 

@@ -26,6 +26,9 @@ const Downloads = lazy(() =>
 const SkinChanger = lazy(() =>
   import('./pages/SkinChanger').then((module) => ({ default: module.SkinChanger }))
 )
+const Hosting = lazy(() =>
+  import('./pages/Hosting').then((module) => ({ default: module.Hosting }))
+)
 const Settings = lazy(() =>
   import('./pages/Settings').then((module) => ({ default: module.Settings }))
 )
@@ -236,6 +239,7 @@ export default function App() {
                 {route === 'instance' && <InstanceDetail />}
                 {route === 'downloads' && <Downloads />}
                 {route === 'skins' && <SkinChanger />}
+                {route === 'hosting' && <Hosting />}
                 {route === 'settings' && <Settings />}
               </Suspense>
             </main>
