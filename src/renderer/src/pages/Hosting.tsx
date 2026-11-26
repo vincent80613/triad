@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Command,
   Copy,
+  ExternalLink,
   FolderOpen,
   Globe2,
   Play,
@@ -25,8 +26,10 @@ import {
 import { normalizeServerAddress } from '@shared/serverAddress'
 import type {
   HostedServer,
+  HostedServerJoinInfo,
   HostedServerState,
   HostedServerStatus,
+  PublicAccessStatus,
   IslandTheme,
   McVersion,
   ServerBackup,
@@ -300,6 +303,9 @@ export function Hosting() {
   const pushToast = useApp((state) => state.pushToast)
   const [servers, setServers] = useState<HostedServer[]>([])
   const [states, setStates] = useState<Record<string, HostedServerState>>({})
+  const [joinInfo, setJoinInfo] = useState<HostedServerJoinInfo | null>(null)
+  const [publicAccess, setPublicAccess] = useState<PublicAccessStatus | null>(null)
+  const [publicBusy, setPublicBusy] = useState(false)
   const [selectedId, setSelectedId] = useState('')
   const [creating, setCreating] = useState(false)
   const [importing, setImporting] = useState(false)
@@ -325,7 +331,7 @@ export function Hosting() {
   const [settingsBusy, setSettingsBusy] = useState(false)
   const [addressError, setAddressError] = useState('')
   const [confirmDelete, setConfirmDelete] = useState(false)
-  const [copied, setCopied] = useState(false)
+  const [copiedKey, setCopiedKey] = useState('')
 
   const [consoleInput, setConsoleInput] = useState('')
   const [commandDraft, setCommandDraft] = useState({ label: '', command: '' })
@@ -354,7 +360,8 @@ export function Hosting() {
   const transitioning =
     status === 'installing' || status === 'starting' || status === 'stopping'
   const canCommand = status === 'running' || status === 'starting'
-  const address = selected ? selected.address || `localhost:${selected.port}` : ''
+  const address = joinInfo?.local ?? (selected ? `localhost:${selected.port}` : '')
+  const publicState = publicAccess?.state ?? 'idle'
   const createAddress = normalizeServerAddress(createDraft.address)
   const releaseVersions = useMemo(() => {
     const releases = versions.filter((version) => version.type === 'release')
@@ -393,6 +400,10 @@ export function Hosting() {
       setStates((current) => ({ ...current, [next.id]: next }))
       if (next.status === 'running' || next.status === 'stopped' || next.status === 'error') {
         void api.hosting.list().then(setServers).catch(() => undefined)
+        if (next.id === selectedRef.current) {
+          void api.hosting.joinInfo(next.id).then(setJoinInfo).catch(() => undefined)
+          void api.hosting.publicAccess(next.id).then(setPublicAccess).catch(() => undefined)
+        }
       }
     })
     const unsubscribeLog = api.on.hostLog(({ id, line }) => {
@@ -410,12 +421,30 @@ export function Hosting() {
     setTab('console')
     setConfirmDelete(false)
     setAddressError('')
-    setCopied(false)
+    setCopiedKey('')
+    setJoinInfo(null)
+    setPublicAccess(null)
     if (!selectedId) {
       setLogs([])
       return
     }
     let cancelled = false
+    void api.hosting
+      .joinInfo(selectedId)
+      .then((info) => {
+        if (!cancelled) setJoinInfo(info)
+      })
+      .catch(() => {
+        if (!cancelled) setJoinInfo(null)
+      })
+    void api.hosting
+      .publicAccess(selectedId)
+      .then((status) => {
+        if (!cancelled) setPublicAccess(status)
+      })
+      .catch(() => {
+        if (!cancelled) setPublicAccess(null)
+      })
     void api.hosting
       .logs(selectedId)
       .then((lines) => {
@@ -429,6 +458,16 @@ export function Hosting() {
       cancelled = true
     }
   }, [selectedId])
+
+  useEffect(() => {
+    if (!selectedId || !publicAccess) return
+    if (publicAccess.state === 'idle' && !publicAccess.address) return
+    if (publicAccess.state === 'error') return
+    const timer = window.setInterval(() => {
+      void api.hosting.publicAccess(selectedId).then(setPublicAccess).catch(() => undefined)
+    }, 2500)
+    return () => window.clearInterval(timer)
+  }, [selectedId, publicAccess?.state])
 
   useEffect(() => {
     if (!selected) {
@@ -620,6 +659,7 @@ export function Hosting() {
       })
       setServers((current) => current.map((entry) => (entry.id === updated.id ? updated : entry)))
       setDraft(serverDraft(updated))
+      void api.hosting.joinInfo(updated.id).then(setJoinInfo).catch(() => undefined)
       setAddressError('')
       pushToast({
         title: 'Server settings saved',
@@ -717,16 +757,68 @@ export function Hosting() {
     }
   }
 
-  async function copyAddress(): Promise<void> {
-    if (!selected) return
+  async function copyValue(value: string, key: string): Promise<void> {
     try {
-      await navigator.clipboard.writeText(address)
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1800)
-      pushToast({ title: 'Server address copied', description: address })
+      await navigator.clipboard.writeText(value)
+      setCopiedKey(key)
+      window.setTimeout(
+        () => setCopiedKey((current) => (current === key ? '' : current)),
+        1800
+      )
+      pushToast({ title: 'Address copied', description: value })
     } catch {
-      pushToast({ title: 'Could not copy the address', description: address, variant: 'error' })
+      pushToast({ title: 'Could not copy the address', description: value, variant: 'error' })
     }
+  }
+
+  async function copyAddress(): Promise<void> {
+    if (!address) return
+    await copyValue(address, 'local')
+  }
+
+  async function enablePublicAccess(): Promise<void> {
+    if (!selected || publicBusy) return
+    const serverId = selected.id
+    setPublicBusy(true)
+    try {
+      const status = await api.hosting.publicAccessEnable(serverId)
+      if (selectedRef.current === serverId) setPublicAccess(status)
+    } catch (error) {
+      pushToast({
+        title: 'Could not turn on public access',
+        description: errorMessage(error),
+        variant: 'error'
+      })
+    } finally {
+      setPublicBusy(false)
+    }
+  }
+
+  async function disablePublicAccess(): Promise<void> {
+    if (!selected || publicBusy) return
+    const serverId = selected.id
+    setPublicBusy(true)
+    try {
+      const status = await api.hosting.publicAccessDisable(serverId)
+      if (selectedRef.current === serverId) setPublicAccess(status)
+      pushToast({
+        title: 'Public access is off',
+        description: 'Players outside your network can no longer join this server.'
+      })
+    } catch (error) {
+      pushToast({
+        title: 'Could not turn off public access',
+        description: errorMessage(error),
+        variant: 'error'
+      })
+    } finally {
+      setPublicBusy(false)
+    }
+  }
+
+  function openPublicPage(): void {
+    const url = publicAccess?.claimUrl ?? publicAccess?.helpUrl
+    if (url) void api.app.openExternal(url)
   }
 
   async function createBackup(): Promise<void> {
@@ -918,7 +1010,7 @@ export function Hosting() {
                     label="Custom address"
                     hint={
                       (createDraft.address ? createAddress.error : '') ||
-                      'Optional. A domain you own, like play.example.net. It must end in a real TLD such as .net, .com, .org or .gg.'
+                      'Optional, and only useful if you own the domain and its DNS already points at this network. Otherwise leave it empty and use the localhost or Wi-Fi address Triad shows.'
                     }
                   >
                     <input
@@ -1103,12 +1195,12 @@ export function Hosting() {
                   )}
                   <button
                     type="button"
-                    className={cn('icon-btn', copied && 'hosting-copy-done')}
-                    title="Copy server address"
-                    aria-label="Copy server address"
+                    className={cn('icon-btn', copiedKey === 'local' && 'hosting-copy-done')}
+                    title="Copy the address for this PC"
+                    aria-label="Copy the address for this PC"
                     onClick={() => void copyAddress()}
                   >
-                    {copied ? <Check size={15} /> : <Copy size={15} />}
+                    {copiedKey === 'local' ? <Check size={15} /> : <Copy size={15} />}
                   </button>
                   <button
                     type="button"
@@ -1174,6 +1266,221 @@ export function Hosting() {
                   )}
                 </div>
               )}
+
+              <div className="hosting-join">
+                <div className="hosting-join-head">
+                  <Wifi size={13} />
+                  <strong>How to join</strong>
+                  <span>
+                    {status === 'running'
+                      ? 'Server is online on this PC'
+                      : 'These addresses work once the server is running'}
+                  </span>
+                </div>
+                <div className="hosting-join-rows">
+                  <div className="hosting-join-row">
+                    <span className="hosting-join-label">This PC</span>
+                    <code className="hosting-join-address">{address}</code>
+                    <span className="hosting-join-hint">
+                      Type this into Minecraft on this computer
+                    </span>
+                    <button
+                      type="button"
+                      className="icon-btn icon-btn--xs"
+                      title="Copy this address"
+                      onClick={() => void copyValue(address, 'local')}
+                    >
+                      {copiedKey === 'local' ? <Check size={13} /> : <Copy size={13} />}
+                    </button>
+                  </div>
+                  {joinInfo?.lan.map((lanAddress) => (
+                    <div className="hosting-join-row" key={lanAddress}>
+                      <span className="hosting-join-label">Same Wi-Fi</span>
+                      <code className="hosting-join-address">{lanAddress}</code>
+                      <span className="hosting-join-hint">Friends on your network</span>
+                      <button
+                        type="button"
+                        className="icon-btn icon-btn--xs"
+                        title="Copy this address"
+                        onClick={() => void copyValue(lanAddress, lanAddress)}
+                      >
+                        {copiedKey === lanAddress ? <Check size={13} /> : <Copy size={13} />}
+                      </button>
+                    </div>
+                  ))}
+                  {joinInfo?.custom &&
+                    joinInfo.custom.address !== address &&
+                    !joinInfo.lan.includes(joinInfo.custom.address) && (
+                      <div
+                        className={cn(
+                          'hosting-join-row',
+                          !joinInfo.custom.resolves && 'is-warning'
+                        )}
+                      >
+                        <span className="hosting-join-label">Custom</span>
+                        <code className="hosting-join-address">{joinInfo.custom.address}</code>
+                        <span className="hosting-join-hint">
+                          {joinInfo.custom.resolves
+                            ? `DNS points to ${joinInfo.custom.addresses[0] ?? 'this address'}`
+                            : 'Doesn’t resolve yet'}
+                        </span>
+                        <button
+                          type="button"
+                          className="icon-btn icon-btn--xs"
+                          title="Copy this address"
+                          onClick={() => void copyValue(joinInfo.custom!.address, 'custom')}
+                        >
+                          {copiedKey === 'custom' ? <Check size={13} /> : <Copy size={13} />}
+                        </button>
+                      </div>
+                    )}
+                </div>
+                {joinInfo?.custom && !joinInfo.custom.resolves && (
+                  <p className="hosting-join-warning">
+                    <AlertTriangle size={12} />
+                    <span>
+                      <code>{joinInfo.custom.address}</code> doesn’t resolve in DNS yet, so Minecraft
+                      says “Unknown host”. Point the domain at this network, or use the public
+                      option below.
+                    </span>
+                  </p>
+                )}
+
+                <div className={cn('hosting-public', publicState === 'online' && 'is-online')}>
+                  <div className="hosting-public-head">
+                    <Globe2 size={12} />
+                    <strong>Friends anywhere</strong>
+                    <span className="hosting-public-provider">playit.gg</span>
+                  </div>
+
+                  {publicState === 'idle' && (
+                    <div className="hosting-public-body">
+                      <p>
+                        {publicAccess?.address ? (
+                          <>
+                            Your saved address is <code>{publicAccess.address}</code>. Turn it back
+                            on when you are ready.
+                          </>
+                        ) : (
+                          'Get a public address that works without opening ports on your router. The playit.gg setup is free and only takes a minute.'
+                        )}
+                      </p>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-primary"
+                        disabled={publicBusy}
+                        onClick={() => void enablePublicAccess()}
+                      >
+                        {publicBusy ? <Spinner size={13} /> : <Globe2 size={13} />}
+                        {publicAccess?.address ? 'Turn on' : 'Set up public access'}
+                      </button>
+                    </div>
+                  )}
+
+                  {publicState === 'awaiting-claim' && (
+                    <div className="hosting-public-body">
+                      <p>
+                        Finish the one-time setup in your browser. This panel updates on its own.
+                      </p>
+                      <div className="hosting-public-actions">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-primary"
+                          disabled={!publicAccess?.claimUrl}
+                          onClick={openPublicPage}
+                        >
+                          <ExternalLink size={13} /> Open setup page
+                        </button>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-ghost"
+                          disabled={publicBusy}
+                          onClick={() => void disablePublicAccess()}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {publicState === 'starting' && (
+                    <div className="hosting-public-body">
+                      <p className="hosting-public-status">
+                        <Spinner size={13} />
+                        {publicAccess?.detail ?? 'Creating your public address…'}
+                      </p>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost"
+                        disabled={publicBusy}
+                        onClick={() => void disablePublicAccess()}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+
+                  {publicState === 'online' && publicAccess?.address && (
+                    <div className="hosting-public-body">
+                      <div className="hosting-public-address">
+                        <code>{publicAccess.address}</code>
+                        <button
+                          type="button"
+                          className="icon-btn icon-btn--xs"
+                          title="Copy the public address"
+                          onClick={() => void copyValue(publicAccess.address!, 'public')}
+                        >
+                          {copiedKey === 'public' ? <Check size={13} /> : <Copy size={13} />}
+                        </button>
+                      </div>
+                      <div className="hosting-public-actions">
+                        <span className="hosting-public-hint">
+                          {status === 'running'
+                            ? 'Send this to friends anywhere. They can add it in Minecraft.'
+                            : 'Start the server, then send this address to friends.'}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-ghost"
+                          disabled={publicBusy}
+                          onClick={() => void disablePublicAccess()}
+                        >
+                          Turn off
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {publicState === 'error' && (
+                    <div className="hosting-public-body">
+                      <p className="hosting-public-error">
+                        <AlertTriangle size={12} />
+                        <span>{publicAccess?.error ?? 'Something went wrong.'}</span>
+                      </p>
+                      <div className="hosting-public-actions">
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-primary"
+                          disabled={publicBusy}
+                          onClick={() => void enablePublicAccess()}
+                        >
+                          {publicBusy ? <Spinner size={13} /> : <Globe2 size={13} />}
+                          Try again
+                        </button>
+                        {publicAccess?.helpUrl && (
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-ghost"
+                            onClick={openPublicPage}
+                          >
+                            <ExternalLink size={13} /> Open playit
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
 
               <div className="hosting-tabs">
                 <Segmented<HostingTab>
@@ -1308,7 +1615,7 @@ export function Hosting() {
                         label="Custom address"
                         hint={
                           addressError ||
-                          'Optional. Must end in a real TLD like .net, .com, .org or .gg. Triad validates the format; point DNS at your PC.'
+                          'Optional. Must end in a real TLD like .net, .com or .org, and its DNS record must already point at this network. Until then Minecraft says “Unknown host”; use the addresses above the tabs.'
                         }
                       >
                         <input
@@ -1353,9 +1660,10 @@ export function Hosting() {
                       </Field>
                     </div>
                     <p className="hosting-subnote">
-                      Players on this PC can join <code>localhost:{selected.port}</code>. A custom
-                      address is the share address: point its DNS record at your router and forward
-                      port {selected.port} for friends outside your network.
+                      Players on this PC can join <code>localhost:{selected.port}</code>; friends on
+                      your Wi-Fi use the address Triad shows above the tabs. A custom address only
+                      works after its DNS record points at your router and port {selected.port} is
+                      forwarded.
                     </p>
                     {selected.imported && selected.sourcePath && (
                       <p className="hosting-subnote">

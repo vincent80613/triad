@@ -85,6 +85,30 @@ export interface ServerAddressResult {
   error?: string
 }
 
+export interface ParsedServerAddress {
+  host: string
+  port?: number
+}
+
+/** Splits a validated address into its host and optional port. */
+export function parseServerAddress(address: string): ParsedServerAddress | null {
+  const value = String(address ?? '').trim()
+  if (!value) return null
+  const match = value.match(/^(.*):(\d{1,5})$/)
+  if (match) {
+    return { host: match[1].toLowerCase(), port: Number(match[2]) }
+  }
+  return { host: value.toLowerCase() }
+}
+
+/** The address players should type, including the server port when it is not 25565. */
+export function serverJoinAddress(address: string, port: number): string {
+  const parsed = parseServerAddress(address)
+  if (!parsed) return `localhost:${port}`
+  const joinPort = parsed.port ?? (port === 25565 ? undefined : port)
+  return `${parsed.host}${joinPort ? `:${joinPort}` : ''}`
+}
+
 function validatePort(raw: string): string | null {
   if (!/^\d{1,5}$/.test(raw)) return 'The port at the end of the address must be a number.'
   const port = Number(raw)
@@ -92,10 +116,14 @@ function validatePort(raw: string): string | null {
   return null
 }
 
-function isIpv4(host: string): boolean {
+export function isIpv4(host: string): boolean {
   const parts = host.split('.')
   if (parts.length !== 4) return false
   return parts.every((part) => /^\d{1,3}$/.test(part) && Number(part) <= 255)
+}
+
+export function isLoopbackHost(host: string): boolean {
+  return host.toLowerCase() === 'localhost' || host === '127.0.0.1'
 }
 
 export function normalizeServerAddress(raw: string): ServerAddressResult {

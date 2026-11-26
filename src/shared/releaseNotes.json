@@ -1,6 +1,37 @@
 {
   "releases": [
     {
+      "version": "1.0.9",
+      "title": "Friends can join from anywhere",
+      "date": "2026-11-26",
+      "sections": [
+        {
+          "title": "Public server access",
+          "items": [
+            "Hosting now has a Friends anywhere section. A one-time playit.gg setup gives the selected server a public Minecraft Java address that works without opening router ports, even behind CGNAT or double NAT.",
+            "Triad downloads and runs the signed playit agent itself, creates a tunnel to the server's real port, and shows the public address with a copy button. The tunnel reconnects when the same server starts again.",
+            "Turn public access off to remove the tunnel. Clear messages cover an unverified playit email, agent and port limits, expired setup links, and retries.",
+            "Triad uses its own playit agent on a private pipe, so an existing playit installation on this PC is left alone."
+          ]
+        },
+        {
+          "title": "Joining and addresses",
+          "items": [
+            "The How to join panel now separates This PC, Same Wi-Fi, Custom and Friends anywhere addresses, each with a copy button.",
+            "Custom domains that do not resolve in DNS are marked clearly, so Minecraft's Unknown host message is no longer a mystery. The server console also logs which addresses to use."
+          ]
+        },
+        {
+          "title": "Notes",
+          "items": [
+            "Public access needs a free playit.gg account and one approval in the browser. The setup page opens when you click Set up public access.",
+            "The server still runs only while Triad is open. Friends need a Microsoft account for servers that keep online mode on, which is the default.",
+            "Each Triad server uses one playit tunnel. The free plan's agents and ports are enough for a few servers; playit shows the exact limits in your account."
+          ]
+        }
+      ]
+    },
+    {
       "version": "1.0.8",
       "title": "Skins that stay, and favorites",
       "date": "2026-11-24",

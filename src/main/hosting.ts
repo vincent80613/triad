@@ -1,11 +1,20 @@
 import { spawn, type ChildProcessWithoutNullStreams } from 'node:child_process'
+import { lookup } from 'node:dns/promises'
 import { existsSync } from 'node:fs'
 import { cp, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
+import { networkInterfaces } from 'node:os'
 import { basename, join, resolve } from 'node:path'
-import { normalizeServerAddress } from '@shared/serverAddress'
+import {
+  isIpv4,
+  isLoopbackHost,
+  normalizeServerAddress,
+  parseServerAddress,
+  serverJoinAddress
+} from '@shared/serverAddress'
 import type {
   CreateHostedServerInput,
   HostedServer,
+  HostedServerJoinInfo,
   HostedServerPatch,
   HostedServerState,
   IslandTheme,
@@ -31,6 +40,7 @@ import { getManifest, latestRelease } from './versions'
 
 const MAX_LOG_LINES = 700
 const STOP_TIMEOUT_MS = 20_000
+const DNS_TIMEOUT_MS = 4_000
 const WORLD_PRESETS: WorldPreset[] = [
   'default',
   'flat',
@@ -297,6 +307,42 @@ function pickServerJar(files: string[]): string | null {
   return jars[0] ?? null
 }
 
+function lanAddresses(): string[] {
+  const found: string[] = []
+  for (const [name, entries] of Object.entries(networkInterfaces())) {
+    if (/vEthernet|VirtualBox|VMware|Hyper-V|Loopback|Docker|WSL/i.test(name)) continue
+    for (const entry of entries ?? []) {
+      if (entry.family !== 'IPv4' || entry.internal) continue
+      if (entry.address.startsWith('169.254.')) continue
+      if (!found.includes(entry.address)) found.push(entry.address)
+    }
+  }
+  const rank = (address: string): number =>
+    address.startsWith('192.168.')
+      ? 0
+      : address.startsWith('10.')
+        ? 1
+        : address.startsWith('172.')
+          ? 2
+          : 3
+  return found.sort((left, right) => rank(left) - rank(right)).slice(0, 2)
+}
+
+function resolveHost(host: string): Promise<string[]> {
+  return new Promise((resolvePromise, reject) => {
+    const timer = setTimeout(() => reject(new Error('The DNS lookup timed out.')), DNS_TIMEOUT_MS)
+    lookup(host, { all: true })
+      .then((rows) => {
+        clearTimeout(timer)
+        resolvePromise(rows.map((row) => row.address))
+      })
+      .catch((error) => {
+        clearTimeout(timer)
+        reject(error)
+      })
+  })
+}
+
 export class ServerManager {
   private managed = new Map<string, Managed>()
   private details = new Map<string, Promise<VanillaDetail>>()
@@ -322,6 +368,56 @@ export class ServerManager {
       result[server.id] = { ...this.ensure(server.id).state }
     }
     return result
+  }
+
+  async joinInfo(id: string): Promise<HostedServerJoinInfo> {
+    const server = this.store.requireServer(id)
+    const local = `localhost:${server.port}`
+    const lan = lanAddresses().map((address) => `${address}:${server.port}`)
+    const info: HostedServerJoinInfo = { local, lan }
+    const parsed = server.address ? parseServerAddress(server.address) : null
+    if (!parsed) return info
+    const address = serverJoinAddress(server.address ?? '', server.port)
+    if (isLoopbackHost(parsed.host)) {
+      info.custom = { address, resolves: true, addresses: ['127.0.0.1'] }
+      return info
+    }
+    if (isIpv4(parsed.host)) {
+      info.custom = { address, resolves: true, addresses: [parsed.host] }
+      return info
+    }
+    try {
+      const addresses = await resolveHost(parsed.host)
+      info.custom = { address, resolves: addresses.length > 0, addresses }
+    } catch {
+      info.custom = { address, resolves: false, addresses: [] }
+    }
+    return info
+  }
+
+  private async logJoinInfo(server: HostedServer): Promise<void> {
+    this.writeLog(server.id, `[Triad] Join on this PC: localhost:${server.port}`)
+    const lan = lanAddresses()
+    if (lan.length) {
+      this.writeLog(
+        server.id,
+        `[Triad] Friends on the same network: ${lan
+          .map((address) => `${address}:${server.port}`)
+          .join(' or ')}`
+      )
+    }
+    if (!server.address) return
+    const info = await this.joinInfo(server.id).catch(() => null)
+    const custom = info?.custom
+    if (!custom) return
+    if (custom.resolves) {
+      this.writeLog(server.id, `[Triad] Custom address ${custom.address} resolves in DNS.`)
+    } else {
+      this.writeLog(
+        server.id,
+        `[Triad] ${custom.address} does not resolve in DNS yet, so Minecraft will say "Unknown host". Use localhost:${server.port} or the network address above until it points here.`
+      )
+    }
   }
 
   state(id: string): HostedServerState {
@@ -1094,6 +1190,7 @@ export class ServerManager {
         players: managed.state.players ?? 0
       })
       this.armAutoSave(server, managed)
+      void this.logJoinInfo(server)
       if (!managed.rulesApplied || managed.buildIsland) {
         setTimeout(() => {
           if (!managed.process) return

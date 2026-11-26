@@ -26,6 +26,7 @@ import type {
 import { explainAuthError } from '@shared/authErrors'
 import type { AutoDownloader } from './auto'
 import type { ServerManager } from './hosting'
+import type { PlayitTunnelManager } from './playit'
 import type { Updater } from './updater'
 import { applyMinecraftSkin } from './accountSkin'
 import { applyPotatoGraphics } from './graphics'
@@ -56,6 +57,7 @@ export interface Services {
   launcher: Launcher
   auto: AutoDownloader
   hosting: ServerManager
+  tunnels: PlayitTunnelManager
   updater: Updater
   getWindow: () => BrowserWindow | null
 }
@@ -176,7 +178,7 @@ function applyWallpaper(services: Services, mode: WallpaperMode): void {
 }
 
 export function registerIpc(services: Services): void {
-  const { store, tasks, content, launcher, auto, hosting, updater } = services
+  const { store, tasks, content, launcher, auto, hosting, tunnels, updater } = services
 
   ipcMain.handle('app:info', async (): Promise<AppInfo> => {
     const build = Number(os.release().split('.')[2] ?? 0)
@@ -628,17 +630,34 @@ export function registerIpc(services: Services): void {
 
   ipcMain.handle('hosting:list', async () => store.data.servers)
   ipcMain.handle('hosting:states', async () => hosting.states())
+  ipcMain.handle('hosting:joinInfo', async (_event, id: string) =>
+    hosting.joinInfo(String(id))
+  )
+  ipcMain.handle('hosting:publicAccess', async (_event, id: string) =>
+    tunnels.status(String(id))
+  )
+  ipcMain.handle('hosting:publicAccessEnable', async (_event, id: string) =>
+    tunnels.enable(store.requireServer(String(id)))
+  )
+  ipcMain.handle('hosting:publicAccessDisable', async (_event, id: string) =>
+    tunnels.disable(String(id))
+  )
   ipcMain.handle('hosting:create', async (_event, input: CreateHostedServerInput) =>
     hosting.create(input)
   )
-  ipcMain.handle('hosting:update', async (_event, id: string, patch: HostedServerPatch) =>
-    hosting.update(String(id), patch ?? {})
-  )
+  ipcMain.handle('hosting:update', async (_event, id: string, patch: HostedServerPatch) => {
+    const updated = await hosting.update(String(id), patch ?? {})
+    void tunnels.sync(updated).catch(() => undefined)
+    return updated
+  })
   ipcMain.handle('hosting:remove', async (_event, id: string) => {
+    await tunnels.remove(String(id)).catch(() => undefined)
     await hosting.remove(String(id))
   })
   ipcMain.handle('hosting:start', async (_event, id: string) => {
     await hosting.start(String(id))
+    const server = store.getServer(String(id))
+    if (server) void tunnels.resume(server)
   })
   ipcMain.handle('hosting:stop', async (_event, id: string) => {
     await hosting.stop(String(id))

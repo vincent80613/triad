@@ -113,12 +113,13 @@ export interface DownloadOptions {
   signal?: AbortSignal
   size?: number
   sha1?: string
+  sha256?: string
   skipIfExists?: boolean
 }
 
-export async function sha1File(path: string): Promise<string> {
+async function hashFile(path: string, algorithm: 'sha1' | 'sha256'): Promise<string> {
   const { createReadStream } = await import('node:fs')
-  const hash = createHash('sha1')
+  const hash = createHash(algorithm)
   await new Promise<void>((resolvePromise, reject) => {
     createReadStream(path)
       .on('data', (chunk) => hash.update(chunk))
@@ -126,6 +127,14 @@ export async function sha1File(path: string): Promise<string> {
       .on('error', reject)
   })
   return hash.digest('hex')
+}
+
+export async function sha1File(path: string): Promise<string> {
+  return hashFile(path, 'sha1')
+}
+
+export async function sha256File(path: string): Promise<string> {
+  return hashFile(path, 'sha256')
 }
 
 export async function downloadFile(
@@ -137,7 +146,13 @@ export async function downloadFile(
   if (options.skipIfExists !== false) {
     const existing = await fileSize(destination)
     if (existing > 0 && (!expectedSize || existing === expectedSize)) {
-      if (options.sha1) {
+      if (options.sha256) {
+        const actual = await sha256File(destination)
+        if (actual === options.sha256) {
+          options.onProgress?.(existing, existing)
+          return
+        }
+      } else if (options.sha1) {
         const actual = await sha1File(destination)
         if (actual === options.sha1) {
           options.onProgress?.(existing, existing)
@@ -180,7 +195,12 @@ export async function downloadFile(
       counter,
       createWriteStream(temp)
     )
-    if (options.sha1) {
+    if (options.sha256) {
+      const actual = await sha256File(temp)
+      if (actual !== options.sha256) {
+        throw new Error(`Checksum mismatch for ${url}`)
+      }
+    } else if (options.sha1) {
       const actual = await sha1File(temp)
       if (actual !== options.sha1) {
         throw new Error(`Checksum mismatch for ${url}`)

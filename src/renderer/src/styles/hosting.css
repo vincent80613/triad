@@ -266,6 +266,235 @@
   white-space: nowrap;
 }
 
+.hosting-join {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 11px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--inset-border);
+  background: rgb(255 255 255 / 0.025);
+}
+
+.hosting-join-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.hosting-join-head strong {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.hosting-join-head span {
+  margin-left: auto;
+  text-align: right;
+}
+
+.hosting-join-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.hosting-join-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 6px 7px;
+  border-radius: 8px;
+  background: rgb(255 255 255 / 0.035);
+}
+
+.hosting-join-row.is-warning {
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
+}
+
+.hosting-join-label {
+  flex: 0 0 76px;
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.hosting-join-address {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hosting-join-hint {
+  flex: 1;
+  min-width: 0;
+  font-size: 10px;
+  color: var(--text-faint);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hosting-join-row .icon-btn {
+  flex: 0 0 auto;
+}
+
+.hosting-join-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--warn) 26%, transparent);
+  background: color-mix(in srgb, var(--warn) 7%, transparent);
+  font-size: 10px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.hosting-join-warning svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--warn);
+}
+
+.hosting-join-warning code {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.hosting-public {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-top: 2px;
+  padding-top: 9px;
+  border-top: 1px solid var(--inset-border);
+}
+
+.hosting-public-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.hosting-public-head strong {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.hosting-public.is-online .hosting-public-head strong {
+  color: var(--accent);
+}
+
+.hosting-public-provider {
+  margin-left: auto;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.hosting-public-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.hosting-public-body p {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.hosting-public-body p code {
+  font-family: var(--font-mono);
+  color: var(--text);
+}
+
+.hosting-public-address {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.hosting-public-address code {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hosting-public-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hosting-public-hint {
+  flex: 1;
+  min-width: 0;
+  font-size: 10px;
+  color: var(--text-faint);
+}
+
+.hosting-public-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--text-dim);
+}
+
+.hosting-public-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--warn) 26%, transparent);
+  background: color-mix(in srgb, var(--warn) 7%, transparent);
+  color: var(--text-dim);
+}
+
+.hosting-public-error svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
+  color: var(--warn);
+}
+
+.hosting-public .btn {
+  align-self: flex-start;
+}
+
 .hosting-confirm {
   display: flex;
   align-items: center;

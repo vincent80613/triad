@@ -133,6 +133,10 @@ const api: Api = {
   hosting: {
     list: () => ipcRenderer.invoke('hosting:list'),
     states: () => ipcRenderer.invoke('hosting:states'),
+    joinInfo: (id) => ipcRenderer.invoke('hosting:joinInfo', id),
+    publicAccess: (id) => ipcRenderer.invoke('hosting:publicAccess', id),
+    publicAccessEnable: (id) => ipcRenderer.invoke('hosting:publicAccessEnable', id),
+    publicAccessDisable: (id) => ipcRenderer.invoke('hosting:publicAccessDisable', id),
     create: (input) => ipcRenderer.invoke('hosting:create', input),
     update: (id, patch) => ipcRenderer.invoke('hosting:update', id, patch),
     remove: (id) => ipcRenderer.invoke('hosting:remove', id),

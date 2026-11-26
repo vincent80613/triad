@@ -118,6 +118,35 @@ export interface HostedServerState {
   startedAt?: number
 }
 
+export interface HostedServerCustomAddress {
+  address: string
+  resolves: boolean
+  addresses: string[]
+}
+
+export interface HostedServerJoinInfo {
+  /** localhost:port — always works for players on this PC. */
+  local: string
+  /** LAN addresses on this PC, already including the server port. */
+  lan: string[]
+  custom?: HostedServerCustomAddress
+}
+
+export type PublicAccessState = 'idle' | 'awaiting-claim' | 'starting' | 'online' | 'error'
+
+export interface PublicAccessStatus {
+  state: PublicAccessState
+  provider: 'playit.gg'
+  /** Public hostname or host:port friends can add in Minecraft. */
+  address?: string
+  /** One-time playit claim page while the account is being connected. */
+  claimUrl?: string
+  error?: string
+  /** Extra progress text shown while downloading or connecting. */
+  detail?: string
+  helpUrl?: string
+}
+
 export interface CreateHostedServerInput {
   name: string
   mcVersion: string
@@ -642,6 +671,10 @@ export interface Api {
   hosting: {
     list: () => Promise<HostedServer[]>
     states: () => Promise<Record<string, HostedServerState>>
+    joinInfo: (id: string) => Promise<HostedServerJoinInfo>
+    publicAccess: (id: string) => Promise<PublicAccessStatus>
+    publicAccessEnable: (id: string) => Promise<PublicAccessStatus>
+    publicAccessDisable: (id: string) => Promise<PublicAccessStatus>
     create: (input: CreateHostedServerInput) => Promise<HostedServer>
     update: (id: string, patch: HostedServerPatch) => Promise<HostedServer>
     remove: (id: string) => Promise<void>

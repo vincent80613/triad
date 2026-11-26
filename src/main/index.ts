@@ -7,6 +7,7 @@ import { ServerManager } from './hosting'
 import { bindWindow, events } from './events'
 import { registerIpc, type Services } from './ipc'
 import { Launcher } from './launch'
+import { PlayitTunnelManager } from './playit'
 import { DiscordPresence } from './presence'
 import { Store } from './store'
 import { TaskManager } from './tasks'
@@ -110,6 +111,8 @@ if (!hasLock) {
     const launcher = new Launcher(store, presence)
     const auto = new AutoDownloader(store, tasks, content)
     const hosting = new ServerManager(store)
+    const tunnels = new PlayitTunnelManager()
+    await tunnels.init()
     const updater = new Updater(() => window)
 
     services = {
@@ -119,6 +122,7 @@ if (!hasLock) {
       launcher,
       auto,
       hosting,
+      tunnels,
       updater,
       getWindow: () => window
     }
@@ -149,6 +153,7 @@ if (!hasLock) {
   let shuttingDown = false
 
   function shutdownServices(): void {
+    services?.tunnels.dispose()
     services?.launcher.dispose()
     services?.auto.stop()
     services?.updater.stop()
